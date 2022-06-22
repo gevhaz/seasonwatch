@@ -18,7 +18,7 @@ from typing import Any, Union
 
 init(autoreset=True)
 
-with open('/home/simon/Programs/seasonwatch/series.yaml', 'r') as f:
+with open('series.yaml', 'r') as f:
     config: Any = yaml.safe_load(f)
 
 ia: Union[IMDbHTTPAccessSystem, IMDbS3AccessSystem, IMDbSqlAccessSystem] = imdb.IMDb("https")
