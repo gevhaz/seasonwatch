@@ -1,10 +1,15 @@
 from datetime import datetime, timedelta
+from typing import TypeAlias
 
 from colorama import Fore
+from imdb.parser.http import IMDbHTTPAccessSystem
+from imdb.parser.s3 import IMDbS3AccessSystem
+from imdb.parser.sql import IMDbSqlAccessSystem
 
-from seasonwatch.app import IMDbObject
 from seasonwatch.exceptions import SeasonwatchException
 from seasonwatch.utils import Utils
+
+IMDbObject: TypeAlias = IMDbHTTPAccessSystem | IMDbS3AccessSystem | IMDbSqlAccessSystem
 
 
 class MediaWatcher:
