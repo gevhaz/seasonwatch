@@ -10,6 +10,7 @@ class ConfigParser:
     Class to parse and store the configuration of what media to check
     for news about and how to find the media.
     """
+
     def __init__(self) -> None:
         self.series: list[dict[str, str]] = []
         self.movies: list[dict[str, str]] = []
