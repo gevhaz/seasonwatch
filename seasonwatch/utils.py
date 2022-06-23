@@ -1,9 +1,14 @@
 from datetime import datetime
+from typing import TypeAlias
 
 from dateutil.parser import ParserError, parse
+from imdb.parser.http import IMDbHTTPAccessSystem
+from imdb.parser.s3 import IMDbS3AccessSystem
+from imdb.parser.sql import IMDbSqlAccessSystem
 
-from seasonwatch.app import IMDbObject
 from seasonwatch.exceptions import SeasonwatchException
+
+IMDbObject: TypeAlias = IMDbHTTPAccessSystem | IMDbS3AccessSystem | IMDbSqlAccessSystem
 
 
 class Utils:

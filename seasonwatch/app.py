@@ -2,9 +2,13 @@ import logging
 import sys
 from typing import TypeAlias
 
+import gi
+
+gi.require_version("Notify", "0.7")
+
 import imdb
-import notify2
 from colorama import init
+from gi.repository import Notify
 from imdb.parser.http import IMDbHTTPAccessSystem
 from imdb.parser.s3 import IMDbS3AccessSystem
 from imdb.parser.sql import IMDbSqlAccessSystem
@@ -26,7 +30,7 @@ def main() -> int:
     except ConfigException as e:
         logging.error(f"Failed to parse config: {e}")
 
-    notify2.init("seasonwatch")
+    Notify.init("Seasonwatch")
     ia: IMDbObject = imdb.IMDb("https")
 
     if len(config.series) > 0:
@@ -38,8 +42,8 @@ def main() -> int:
                 return 1
 
             print(color + message)
-            n = notify2.Notification(show_cfg["title"], message)
-            n.show()
+            notification = Notify.Notification.new(show_cfg["title"], message)
+            notification.show()
 
     return 0
 
