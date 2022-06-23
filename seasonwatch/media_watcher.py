@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 from colorama import Fore
 
+from seasonwatch.app import IMDbObject
 from seasonwatch.exceptions import SeasonwatchException
 from seasonwatch.utils import Utils
 
@@ -12,7 +13,10 @@ class MediaWatcher:
     """
 
     @staticmethod
-    def check_for_new_seasons(series_config: dict[str, str], ia) -> tuple[str, str]:
+    def check_for_new_seasons(
+        series_config: dict[str, str],
+        ia: IMDbObject,
+    ) -> tuple[str, str]:
         last_watched_season = int(series_config["current_season"])
         next_season = last_watched_season + 1
         name = series_config["title"]

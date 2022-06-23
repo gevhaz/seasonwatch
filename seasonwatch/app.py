@@ -1,9 +1,10 @@
 import logging
 import sys
+from typing import TypeAlias
 
 import imdb
 import notify2
-from colorama import Fore, init
+from colorama import init
 from imdb.parser.http import IMDbHTTPAccessSystem
 from imdb.parser.s3 import IMDbS3AccessSystem
 from imdb.parser.sql import IMDbSqlAccessSystem
@@ -14,8 +15,10 @@ from seasonwatch.media_watcher import MediaWatcher
 
 init(autoreset=True)
 
+IMDbObject: TypeAlias = IMDbHTTPAccessSystem | IMDbS3AccessSystem | IMDbSqlAccessSystem
 
-def main():
+
+def main() -> int:
 
     config = ConfigParser()
     try:
@@ -24,9 +27,7 @@ def main():
         logging.error(f"Failed to parse config: {e}")
 
     notify2.init("seasonwatch")
-    ia: IMDbHTTPAccessSystem | IMDbS3AccessSystem | IMDbSqlAccessSystem = imdb.IMDb(
-        "https"
-    )
+    ia: IMDbObject = imdb.IMDb("https")
 
     if len(config.series) > 0:
         for show_cfg in config.series:
@@ -39,6 +40,8 @@ def main():
             print(color + message)
             n = notify2.Notification(show_cfg["title"], message)
             n.show()
+
+    return 0
 
 
 if __name__ == "__main__":
