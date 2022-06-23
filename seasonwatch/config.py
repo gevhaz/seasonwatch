@@ -15,7 +15,26 @@ class ConfigParser:
         self.series: list[dict[str, str]] = []
         self.movies: list[dict[str, str]] = []
 
-    def parse_config(self, file_path: str):
+    @staticmethod
+    def string_or_int(value: Any) -> str:
+        """
+        :param value: The value to be vaildated.
+
+        :raises:ConfigException: Raised if the value is neither string nor int.
+
+        :return: The original value as a string if validation passes
+        """
+        if isinstance(value, int):
+            value = str(value)
+
+        if not isinstance(value, str):
+            raise ConfigException(
+                f"Value should be string or int but {type(value)} was found"
+            )
+
+        return value
+
+    def parse_config(self, file_path: str) -> None:
         """
         Pase the config at the specied location.
 
@@ -30,35 +49,23 @@ class ConfigParser:
         all_series = config.get("series")
         if all_series is not None:
             for series in all_series:
-                title: Any = series.get("title")
-                id: Any = series.get("id")
-                last_season: Any = series.get("current_season")
 
-                if isinstance(title, int):
-                    title = str(title)
+                try:
+                    title = ConfigParser.string_or_int(series.get("title"))
+                except ConfigException as e:
+                    raise ConfigException(f"Title: {e}")
 
-                if isinstance(id, int):
-                    id = str(id)
+                try:
+                    id = ConfigParser.string_or_int(series.get("id"))
+                except ConfigException as e:
+                    raise ConfigException(f"{title}: {e}")
 
-                if isinstance(last_season, int):
-                    last_season = str(last_season)
-
-                if not isinstance(title, str):
-                    raise ConfigException(
-                        f"title should be string or int but {type(title)} was found"
+                try:
+                    last_season = ConfigParser.string_or_int(
+                        series.get("current_season")
                     )
-
-                if not isinstance(id, str):
-                    raise ConfigException(
-                        f"id should be string or int but {type(id)} was found for "
-                        f"show: {title}"
-                    )
-
-                if not isinstance(last_season, str):
-                    raise ConfigException(
-                        "current_season should be string or int but "
-                        f"{type(last_season)} was found {title}"
-                    )
+                except ConfigException as e:
+                    raise ConfigException(f"{title}: {e}")
 
                 self.series.append(
                     {
@@ -71,26 +78,16 @@ class ConfigParser:
         movies = config.get("movies")
         if movies is not None:
             for movie in movies:
-                title: Any = movie.get("title")
-                id: Any = movie.get("id")
-                last_season: Any = movie.get("current_season")
 
-                if isinstance(title, int):
-                    title = str(title)
+                try:
+                    title = ConfigParser.string_or_int(movie.get("title"))
+                except ConfigException as e:
+                    raise ConfigException(f"Title: {e}")
 
-                if isinstance(id, int):
-                    id = str(id)
-
-                if not isinstance(title, str):
-                    raise ConfigException(
-                        f"title should be string or int but {type(title)} was found"
-                    )
-
-                if not isinstance(id, str):
-                    raise ConfigException(
-                        f"id should be string or int but {type(id)} was found for "
-                        f"show: {title}"
-                    )
+                try:
+                    id = ConfigParser.string_or_int(movie.get("id"))
+                except ConfigException as e:
+                    raise ConfigException(f"{title}: {e}")
 
                 self.movies.append(
                     {
