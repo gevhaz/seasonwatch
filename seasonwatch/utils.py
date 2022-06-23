@@ -42,3 +42,19 @@ class Utils:
             )
 
         return next_season_earliest_release
+
+    @staticmethod
+    def get_next_episode_id(id: str, last_watched_season: int, ia) -> str | None:
+        next_season = last_watched_season + 1
+
+        imdb_all_seasons_data = ia.get_movie(id, "episodes").data.get("episodes")
+
+        if imdb_all_seasons_data is None:
+            raise SeasonwatchException("Couldn't load episodes. Skipping...")
+
+        latest_available_season: int = max(imdb_all_seasons_data.keys())
+
+        if latest_available_season <= last_watched_season:
+            return None
+
+        return imdb_all_seasons_data[next_season][1].getID()
