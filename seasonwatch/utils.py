@@ -2,6 +2,7 @@ from datetime import datetime
 
 from dateutil.parser import ParserError, parse
 
+from seasonwatch.app import IMDbObject
 from seasonwatch.exceptions import SeasonwatchException
 
 
@@ -15,7 +16,7 @@ class Utils:
         title: str,
         next_season: int,
         next_episode_id: str,
-        ia,
+        ia: IMDbObject,
     ) -> datetime:
         imdb_release_data = ia.get_movie_release_dates(next_episode_id).get("data")
 
@@ -44,7 +45,11 @@ class Utils:
         return next_season_earliest_release
 
     @staticmethod
-    def get_next_episode_id(id: str, last_watched_season: int, ia) -> str | None:
+    def get_next_episode_id(
+        id: str,
+        last_watched_season: int,
+        ia: IMDbObject,
+    ) -> str | None:
         next_season = last_watched_season + 1
 
         imdb_all_seasons_data = ia.get_movie(id, "episodes").data.get("episodes")
@@ -57,4 +62,9 @@ class Utils:
         if latest_available_season <= last_watched_season:
             return None
 
-        return imdb_all_seasons_data[next_season][1].getID()
+        try:
+            next_episode_id = str(imdb_all_seasons_data[next_season][1].getID())
+        except ParserError:
+            return None
+
+        return next_episode_id
