@@ -5,7 +5,7 @@ import gi
 
 gi.require_version("Notify", "0.7")
 
-from colorama import init
+from colorama import Fore, init
 from gi.repository import Notify
 from imdb import Cinemagoer
 from imdb.parser.http import IMDbHTTPAccessSystem
@@ -27,18 +27,31 @@ def main() -> int:
 
     Notify.init("Seasonwatch")
     ia: IMDbHTTPAccessSystem = Cinemagoer(accessSystem="https")
+    watcher = MediaWatcher()
 
     if len(config.series) > 0:
         for show_cfg in config.series:
             try:
-                color, message = MediaWatcher.check_for_new_seasons(show_cfg, ia)
+                watcher.check_for_new_seasons(show_cfg, ia)
             except SeasonwatchException as e:
                 logging.error(f"Seasonwatch encountered an error: {e}")
                 return 1
 
-            print(color + message)
-            notification = Notify.Notification.new(show_cfg["title"], message)
+        for title, message in watcher.series["new"].items():
+            print(Fore.BLUE + message)
+            notification = Notify.Notification.new(title, message)
             notification.show()
+
+        for title, message in watcher.series["soon"].items():
+            print(Fore.GREEN + message)
+            notification = Notify.Notification.new(title, message)
+            notification.show()
+
+        for title, message in watcher.series["later"].items():
+            print(message)
+
+        for title, message in watcher.series["nothing"].items():
+            print(message)
 
     return 0
 
