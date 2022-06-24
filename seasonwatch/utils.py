@@ -1,14 +1,9 @@
 from datetime import datetime
-from typing import TypeAlias
 
 from dateutil.parser import ParserError, parse
 from imdb.parser.http import IMDbHTTPAccessSystem
-from imdb.parser.s3 import IMDbS3AccessSystem
-from imdb.parser.sql import IMDbSqlAccessSystem
 
 from seasonwatch.exceptions import SeasonwatchException
-
-IMDbObject: TypeAlias = IMDbHTTPAccessSystem | IMDbS3AccessSystem | IMDbSqlAccessSystem
 
 
 class Utils:
@@ -21,7 +16,7 @@ class Utils:
         title: str,
         next_season: int,
         next_episode_id: str,
-        ia: IMDbObject,
+        ia: IMDbHTTPAccessSystem,
     ) -> datetime:
         imdb_release_data = ia.get_movie_release_dates(next_episode_id).get("data")
 
@@ -53,7 +48,7 @@ class Utils:
     def get_next_episode_id(
         id: str,
         last_watched_season: int,
-        ia: IMDbObject,
+        ia: IMDbHTTPAccessSystem,
     ) -> str | None:
         next_season = last_watched_season + 1
 
