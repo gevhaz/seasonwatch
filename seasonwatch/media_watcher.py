@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 
-from colorama import Fore
 from imdb.parser.http import IMDbHTTPAccessSystem
 
 from seasonwatch.exceptions import SeasonwatchException
@@ -12,11 +11,19 @@ class MediaWatcher:
     Class for checking for new media given a config
     """
 
-    @staticmethod
+    def __init__(self) -> None:
+        self.series: dict[str, dict[str, str]] = {
+            "new": {},
+            "soon": {},
+            "later": {},
+            "nothing": {},
+        }
+
     def check_for_new_seasons(
+        self,
         series_config: dict[str, str],
         ia: IMDbHTTPAccessSystem,
-    ) -> tuple[str, str]:
+    ) -> None:
         last_watched_season = int(series_config["current_season"])
         next_season = last_watched_season + 1
         name = series_config["title"]
@@ -25,10 +32,12 @@ class MediaWatcher:
         try:
             next_episode_id = Utils.get_next_episode_id(id, last_watched_season, ia)
         except SeasonwatchException as e:
-            return Fore.RED, f"{name}: {str(e)}"
+            self.series["nothing"][name] = f"{name}: {str(e)}"
+            return None
 
         if next_episode_id is None:
-            return Fore.RESET, f"No new season found for {name}"
+            self.series["nothing"][name] = f"No season {next_season} found for {name}"
+            return None
 
         try:
             next_season_earliest_release = Utils.get_next_release_date(
@@ -37,13 +46,17 @@ class MediaWatcher:
                 next_episode_id,
                 ia,
             )
-        except SeasonwatchException as e:
-            return Fore.RED, str(e)
+        except SeasonwatchException:
+            self.series["nothing"][name] = (
+                f"Season {next_season} of {name} is announced but there is no release "
+                "date yet"
+            )
+            return None
 
         # The new season is out
         if next_season_earliest_release < datetime.now():
             message = f"Season {next_season} of {name} is out already!"
-            return Fore.BLUE, message
+            self.series["new"][name] = message
         # The new season is not yet out
         elif next_season_earliest_release < datetime.now() + timedelta(days=90):
             message = (
@@ -51,10 +64,12 @@ class MediaWatcher:
                 "will be released on "
                 f"{next_season_earliest_release.strftime('%B %-d, %Y')}."
             )
-            return Fore.GREEN, message
+            self.series["soon"][name] = message
         else:
             message = (
                 f"Season {next_season} of {name} coming up, in more "
                 "than three months"
             )
-            return Fore.RESET, message
+            self.series["later"][name] = message
+
+        return None
