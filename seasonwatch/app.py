@@ -1,25 +1,20 @@
 import logging
 import sys
-from typing import TypeAlias
 
 import gi
 
 gi.require_version("Notify", "0.7")
 
-import imdb
 from colorama import init
 from gi.repository import Notify
+from imdb import Cinemagoer
 from imdb.parser.http import IMDbHTTPAccessSystem
-from imdb.parser.s3 import IMDbS3AccessSystem
-from imdb.parser.sql import IMDbSqlAccessSystem
 
 from seasonwatch.config import ConfigParser
 from seasonwatch.exceptions import ConfigException, SeasonwatchException
 from seasonwatch.media_watcher import MediaWatcher
 
 init(autoreset=True)
-
-IMDbObject: TypeAlias = IMDbHTTPAccessSystem | IMDbS3AccessSystem | IMDbSqlAccessSystem
 
 
 def main() -> int:
@@ -31,7 +26,7 @@ def main() -> int:
         logging.error(f"Failed to parse config: {e}")
 
     Notify.init("Seasonwatch")
-    ia: IMDbObject = imdb.IMDb("https")
+    ia: IMDbHTTPAccessSystem = Cinemagoer(accessSystem="https")
 
     if len(config.series) > 0:
         for show_cfg in config.series:
