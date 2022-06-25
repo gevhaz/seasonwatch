@@ -1,4 +1,12 @@
 [[package]]
+name = "apsw"
+version = "3.38.5.post1"
+description = "Another Python SQLite Wrapper"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "black"
 version = "22.3.0"
 description = "The uncompromising code formatter."
@@ -291,9 +299,37 @@ python-versions = ">=3.7"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "fd2f3c929292ba002907238c66d0c5bb29f209d1d59dd84aaa6ce0542813b9e8"
+content-hash = "0633640b3640277da31b1d17f68a64901168da8cdfb0a29b63db0cb26eb78236"
 
 [metadata.files]
+apsw = [
+    {file = "apsw-3.38.5.post1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:19a59ea874f6eae54fae1e2e01240974b01acd767237f54794a51ec73763445e"},
+    {file = "apsw-3.38.5.post1-cp310-cp310-manylinux_2_5_i686.manylinux1_i686.manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:46b3f1b70ef3f3edfc13d209039eb281c9962e03755b76f5ac383257cc1b1f85"},
+    {file = "apsw-3.38.5.post1-cp310-cp310-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:a1c6bc0a7494e2e470556d3fb25538a30a35d5caf067c9e9681fc7e1ae1933de"},
+    {file = "apsw-3.38.5.post1-cp310-cp310-win32.whl", hash = "sha256:a4f39ef72d050022c50b21e7d648f14e2e6b582c2322475c4ca0fb7030a4e891"},
+    {file = "apsw-3.38.5.post1-cp310-cp310-win_amd64.whl", hash = "sha256:1f2db09c13cde4cb8c1c63f0f871f97377815735e74da8656d37b7509b220d58"},
+    {file = "apsw-3.38.5.post1-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:c77067badf37eb7e4d9d50784e71c27b629b194842413b684c9f046a6fd9c2da"},
+    {file = "apsw-3.38.5.post1-cp36-cp36m-manylinux_2_5_i686.manylinux1_i686.manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:4dda33da33f41954b6aa93094a3e7c9b8b2ed60179e445ce67229b0d17410eac"},
+    {file = "apsw-3.38.5.post1-cp36-cp36m-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:21c76b909ba852205a69d0db7657a69fdc15f17659564362e0ef89d9daf351e3"},
+    {file = "apsw-3.38.5.post1-cp36-cp36m-win32.whl", hash = "sha256:b21397a223c99b1ec94e6d6ce988e9d62d52ac721299f343c6e9a809bc2fa24b"},
+    {file = "apsw-3.38.5.post1-cp36-cp36m-win_amd64.whl", hash = "sha256:1c7b903a079d3085f546fa62d594b0ad58a8a8b01fca9cb282796793f91632b0"},
+    {file = "apsw-3.38.5.post1-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:59e811f0d2c465803d96d16b15286c6ffe78d5468bd087e8e55db7321f760221"},
+    {file = "apsw-3.38.5.post1-cp37-cp37m-manylinux_2_5_i686.manylinux1_i686.manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:2d0799aef7f2681f2404e5feeae9dfe519a2679d7f9dc1b86015f09861f11135"},
+    {file = "apsw-3.38.5.post1-cp37-cp37m-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:7632466e767e626610818f2c35bf0838dfde1d26b60803a42e9342040d3eb50c"},
+    {file = "apsw-3.38.5.post1-cp37-cp37m-win32.whl", hash = "sha256:8e40a90d1ae650d8dfaf81c3c484dda99b67f7531b5d5ecb5feb28b6d1f174da"},
+    {file = "apsw-3.38.5.post1-cp37-cp37m-win_amd64.whl", hash = "sha256:7a39b7831853c453336f993ef9cec6946bafb39584c17b6b06b0fcd523c65b39"},
+    {file = "apsw-3.38.5.post1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:c6de2b1a20b35775d99e7cee5277b8a8ea2055edde9844c180429dea2c56158c"},
+    {file = "apsw-3.38.5.post1-cp38-cp38-manylinux_2_5_i686.manylinux1_i686.manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:6517ad037e5879488cbdd4df825a0555f4645544e185db66ab28f467e9e9c6ea"},
+    {file = "apsw-3.38.5.post1-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:34d8e19afcb9fb0d319fce7885e46a415cea5d21587ca21a2a82c84e9b0e5cd8"},
+    {file = "apsw-3.38.5.post1-cp38-cp38-win32.whl", hash = "sha256:09fb9eb2e05da3d90903e51c80f00893654a5c6b9c406661d6d2a20363294ee2"},
+    {file = "apsw-3.38.5.post1-cp38-cp38-win_amd64.whl", hash = "sha256:7a96b3e606b05794119643c74624e2ff192d83c2b61d5ccf942ea0cf65569329"},
+    {file = "apsw-3.38.5.post1-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:bbf48ded0f130ddc499c3a3ac8752a6d03a56796f9d5a158ed6fa737797de0bf"},
+    {file = "apsw-3.38.5.post1-cp39-cp39-manylinux_2_5_i686.manylinux1_i686.manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:426811dc2fd1172626fbaa62cbf6404e92dd3136eed2afa686833a3f104ae8f0"},
+    {file = "apsw-3.38.5.post1-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:6193b95bd48019956fb7e022d56eec99cc6ba8f26ee88a9a2b6742d9b6f1c50a"},
+    {file = "apsw-3.38.5.post1-cp39-cp39-win32.whl", hash = "sha256:acd73938effde7c1f16d12bc6c1ca8e0cf9203da225cf782a22c7663dbde7867"},
+    {file = "apsw-3.38.5.post1-cp39-cp39-win_amd64.whl", hash = "sha256:9de84a0302b4f5c15f1eccc8c3a12bb97c3fbbba20bd24d730c7e268d7dce70d"},
+    {file = "apsw-3.38.5.post1.tar.gz", hash = "sha256:87e1dc7b222f1f1dec8b8fa843f3561fe73a41f825d3d6ce49c94b56ef731d26"},
+]
 black = [
     {file = "black-22.3.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:2497f9c2386572e28921fa8bec7be3e51de6801f7459dffd6e62492531c47e09"},
     {file = "black-22.3.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:5795a0375eb87bfe902e80e0c8cfaedf8af4d49694d69161e5bd3206c18618bb"},
