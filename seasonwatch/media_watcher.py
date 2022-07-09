@@ -1,8 +1,9 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from imdb.parser.http import IMDbHTTPAccessSystem
 
 from seasonwatch.exceptions import SeasonwatchException
+from seasonwatch.sql import Sql
 from seasonwatch.utils import Utils
 
 
@@ -28,6 +29,17 @@ class MediaWatcher:
         next_season = last_watched_season + 1
         name = series_config["title"]
         id = series_config["id"]
+
+        old_data = Sql.read_series(id)
+
+        last_change = date.strftime(date.today(), "%Y-%m-%d 00:00:00")
+        Sql.update_series(
+            id,
+            name,
+            last_watched_season,
+            int(old_data.get("last_season", 0)),
+            last_change,
+        )
 
         try:
             next_episode_id = Utils.get_next_episode_id(id, last_watched_season, ia)
