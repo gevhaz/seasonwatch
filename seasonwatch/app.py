@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 
 import gi
@@ -11,8 +12,10 @@ from imdb import Cinemagoer
 from imdb.parser.http import IMDbHTTPAccessSystem
 
 from seasonwatch.config import ConfigParser
+from seasonwatch.constants import Constants
 from seasonwatch.exceptions import ConfigException, SeasonwatchException
 from seasonwatch.media_watcher import MediaWatcher
+from seasonwatch.sql import Sql
 
 init(autoreset=True)
 
@@ -28,6 +31,11 @@ def main() -> int:
     Notify.init("Seasonwatch")
     ia: IMDbHTTPAccessSystem = Cinemagoer(accessSystem="https")
     watcher = MediaWatcher()
+
+    if not Constants.DATA_DIRECTORY.exists():
+        os.mkdir(Constants.DATA_DIRECTORY)
+
+    Sql.ensure_table()
 
     if len(config.series) > 0:
         for show_cfg in config.series:
