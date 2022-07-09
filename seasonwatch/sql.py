@@ -43,10 +43,11 @@ class Sql:
         last: int,
         checks: int,
         last_change: str,
+        last_notify: str,
     ) -> None:
         connection = apsw.Connection(Constants.DATABASE_PATH)
         cursor = connection.cursor()
-        # cursor.setexectrace(mytrace)
+        # cursor.s
         # cursor.setrowtrace(rowtrace)
 
         checks = checks + 1
@@ -62,7 +63,7 @@ class Sql:
                 last_notified_date,
                 last_change_date
             )
-            VALUES({id}, '{title}', {last}, {checks}, datetime('now'), '{last_change}');
+            VALUES({id}, '{title}', {last}, {checks}, '{last_notify}', '{last_change}');
             """
         )
         cursor.execute("COMMIT TRANSACTION")
@@ -100,6 +101,42 @@ class Sql:
                 "last_notified": notified,
                 "last_changed": change,
             }
+            # cursor.execute("COMMIT TRANSACTION")
+        connection.close()
+        return values
+
+    @staticmethod
+    def read_all_series() -> list[dict[str, str]]:
+        """
+        Return data from the database for every TV show registered.
+        """
+        connection = apsw.Connection(Constants.DATABASE_PATH)
+        cursor = connection.cursor()
+        values: list[dict[str, str]] = []
+        for id, title, last, check, notified, change in cursor.execute(
+            f"""
+            SELECT
+                id,
+                title,
+                last_watched_season,
+                number_of_checks,
+                last_notified_date,
+                last_change_date
+            FROM
+                {Constants.SERIES_TABLE}
+            """
+        ):
+            # Safe to assume only one show with a specific ID
+            values.append(
+                {
+                    "id": id,
+                    "title": title,
+                    "last_season": last,
+                    "last_check": check,
+                    "last_notified": notified,
+                    "last_changed": change,
+                }
+            )
             # cursor.execute("COMMIT TRANSACTION")
         connection.close()
         return values

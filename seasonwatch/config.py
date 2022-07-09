@@ -1,97 +1,42 @@
-from typing import Any
-
-import yaml
-
-from seasonwatch.exceptions import ConfigException
+from seasonwatch.exceptions import SeasonwatchException
+from seasonwatch.sql import Sql
 
 
-class ConfigParser:
-    """
-    Class to parse and store the configuration of what media to check
-    for news about and how to find the media.
-    """
-
-    def __init__(self) -> None:
-        self.series: list[dict[str, str]] = []
-        self.movies: list[dict[str, str]] = []
-
+class Configure:
     @staticmethod
-    def string_or_int(value: Any) -> str:
+    def series() -> None:
         """
-        :param value: The value to be vaildated.
-
-        :raises:ConfigException: Raised if the value is neither string nor int.
-
-        :return: The original value as a string if validation passes
+        Function for adding TV-shows to the database. Requests user from
+        the input and the updates the database, with default values for
+        that which the user doesn't provide.
         """
-        if isinstance(value, int):
-            value = str(value)
+        add_more = True
+        while add_more:
+            title = input("Title of the show: ")
+            id = input("ID of the show (after 'tt' in the url on IMDB): ")
+            last_season = input("Last watched season: ")
 
-        if not isinstance(value, str):
-            raise ConfigException(
-                f"Value should be string or int but {type(value)} was found"
-            )
+            try:
+                last_season_int = int(last_season)
+            except ValueError:
+                raise SeasonwatchException(f"Couldn't parse '{last_season}' as an int")
 
-        return value
+            print(f"title: {title}")
+            print(f"ID: {id}")
+            print(f"Last watched season: {last_season}")
+            ok = False if input("Does this look ok? (Y/n) ") == "n" else True
 
-    def parse_config(self, file_path: str) -> None:
-        """
-        Pase the config at the specied location.
-
-        :param file_path: Path to the config.
-        """
-        with open(file_path, "r") as f:
-            config: Any = yaml.safe_load(f)
-
-        if not isinstance(config, dict):
-            raise ConfigException("The configuration cannot be parsed as a dictionary")
-
-        all_series = config.get("series")
-        if all_series is not None:
-            for series in all_series:
-
-                try:
-                    title = ConfigParser.string_or_int(series.get("title"))
-                except ConfigException as e:
-                    raise ConfigException(f"Title: {e}")
-
-                try:
-                    id = ConfigParser.string_or_int(series.get("id"))
-                except ConfigException as e:
-                    raise ConfigException(f"{title}: {e}")
-
-                try:
-                    last_season = ConfigParser.string_or_int(
-                        series.get("current_season")
-                    )
-                except ConfigException as e:
-                    raise ConfigException(f"{title}: {e}")
-
-                self.series.append(
-                    {
-                        "title": title,
-                        "id": id,
-                        "current_season": last_season,
-                    }
+            if ok:
+                Sql.update_series(
+                    id,
+                    title,
+                    last_season_int,
+                    0,
+                    "1970-01-01 00:00:00",
+                    "1970-01-01 00:00:00",
                 )
+            else:
+                print("Data was not saved")
 
-        movies = config.get("movies")
-        if movies is not None:
-            for movie in movies:
-
-                try:
-                    title = ConfigParser.string_or_int(movie.get("title"))
-                except ConfigException as e:
-                    raise ConfigException(f"Title: {e}")
-
-                try:
-                    id = ConfigParser.string_or_int(movie.get("id"))
-                except ConfigException as e:
-                    raise ConfigException(f"{title}: {e}")
-
-                self.movies.append(
-                    {
-                        "title": title,
-                        "id": id,
-                    }
-                )
+            print("")
+            add_more = True if input("Add more shows? (y/N) ") == "y" else False

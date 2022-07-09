@@ -22,66 +22,76 @@ class MediaWatcher:
 
     def check_for_new_seasons(
         self,
-        series_config: dict[str, str],
         ia: IMDbHTTPAccessSystem,
     ) -> None:
-        last_watched_season = int(series_config["current_season"])
-        next_season = last_watched_season + 1
-        name = series_config["title"]
-        id = series_config["id"]
+        """
+        Look through the seasons in the database, and check on IMDb
+        whether there is a new season coming up, or one that has already
+        come out. This is notified as desktop notification for the more
+        important ones, and information about all series is also
+        returned for further use.
+        """
+        series_data = Sql.read_all_series()
+        for series in series_data:
+            last_watched_season = int(series["last_season"])
+            next_season = last_watched_season + 1
+            name = series["title"]
+            id = series["id"]
 
-        old_data = Sql.read_series(id)
+            old_data = Sql.read_series(id)
 
-        last_change = date.strftime(date.today(), "%Y-%m-%d 00:00:00")
-        Sql.update_series(
-            id,
-            name,
-            last_watched_season,
-            int(old_data.get("last_season", 0)),
-            last_change,
-        )
-
-        try:
-            next_episode_id = Utils.get_next_episode_id(id, last_watched_season, ia)
-        except SeasonwatchException as e:
-            self.series["nothing"][name] = f"{name}: {str(e)}"
-            return None
-
-        if next_episode_id is None:
-            self.series["nothing"][name] = f"No season {next_season} found for {name}"
-            return None
-
-        try:
-            next_season_earliest_release = Utils.get_next_release_date(
+            last_change = date.strftime(date.today(), "%Y-%m-%d 00:00:00")
+            last_notify = date.strftime(date.today(), "%Y-%m-%d 00:00:00")
+            Sql.update_series(
+                id,
                 name,
-                next_season,
-                next_episode_id,
-                ia,
+                last_watched_season,
+                int(old_data.get("last_season", 0)),
+                last_change,
+                last_notify,
             )
-        except SeasonwatchException:
-            self.series["nothing"][name] = (
-                f"Season {next_season} of {name} is announced but there is no release "
-                "date yet"
-            )
-            return None
 
-        # The new season is out
-        if next_season_earliest_release < datetime.now():
-            message = f"Season {next_season} of {name} is out already!"
-            self.series["new"][name] = message
-        # The new season is not yet out
-        elif next_season_earliest_release < datetime.now() + timedelta(days=90):
-            message = (
-                f"Season {next_season} of {name} is not yet out but "
-                "will be released on "
-                f"{next_season_earliest_release.strftime('%B %-d, %Y')}."
-            )
-            self.series["soon"][name] = message
-        else:
-            message = (
-                f"Season {next_season} of {name} coming up, in more "
-                "than three months"
-            )
-            self.series["later"][name] = message
+            try:
+                next_episode_id = Utils.get_next_episode_id(id, last_watched_season, ia)
+            except SeasonwatchException as e:
+                self.series["nothing"][name] = f"{name}: {str(e)}"
+                continue
 
-        return None
+            if next_episode_id is None:
+                self.series["nothing"][
+                    name
+                ] = f"No season {next_season} found for {name}"
+                continue
+
+            try:
+                next_season_earliest_release = Utils.get_next_release_date(
+                    name,
+                    next_season,
+                    next_episode_id,
+                    ia,
+                )
+            except SeasonwatchException:
+                self.series["nothing"][name] = (
+                    f"Season {next_season} of {name} is announced but there is no "
+                    "release date yet"
+                )
+                continue
+
+            # The new season is out
+            if next_season_earliest_release < datetime.now():
+                message = f"Season {next_season} of {name} is out already!"
+                self.series["new"][name] = message
+            # The new season is not yet out
+            elif next_season_earliest_release < datetime.now() + timedelta(days=90):
+                message = (
+                    f"Season {next_season} of {name} is not yet out but "
+                    "will be released on "
+                    f"{next_season_earliest_release.strftime('%B %-d, %Y')}."
+                )
+                self.series["soon"][name] = message
+            else:
+                message = (
+                    f"Season {next_season} of {name} coming up, in more "
+                    "than three months"
+                )
+                self.series["later"][name] = message
