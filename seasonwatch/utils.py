@@ -68,3 +68,7 @@ class Utils:
             return None
 
         return next_episode_id
+
+    @staticmethod
+    def timestamp() -> str:
+        return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
