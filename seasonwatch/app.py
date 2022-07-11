@@ -36,6 +36,7 @@ def main() -> int:
     if not Constants.DATA_DIRECTORY.exists():
         os.mkdir(Constants.DATA_DIRECTORY)
 
+    Sql.backup_database()
     Sql.ensure_table()
 
     try:
