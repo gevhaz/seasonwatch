@@ -1,6 +1,11 @@
+import os
+import shutil
+from pathlib import Path
+
 import apsw
 
 from seasonwatch.constants import Constants
+from seasonwatch.utils import Utils
 
 
 class Sql:
@@ -35,6 +40,23 @@ class Sql:
         )
         cursor.execute("COMMIT TRANSACTION")
         connection.close()
+
+    @staticmethod
+    def backup_database() -> None:
+        N_BACKUPS = 10
+        if Path(Constants.DATABASE_PATH).exists():
+            backup_path = Path(
+                Constants.DATA_DIRECTORY / str(Utils.timestamp() + "_database.sqlite")
+            )
+            shutil.copyfile(Constants.DATABASE_PATH, backup_path)
+
+        dir_content = os.listdir(Constants.DATA_DIRECTORY)
+        dir_content.remove(Constants.DATABASE_FILE)
+        dir_content.sort(reverse=True)
+        files_to_remove = set(dir_content).difference(set(dir_content[0:N_BACKUPS]))
+        for file in files_to_remove:
+            if "database" in file:
+                os.remove(Constants.DATA_DIRECTORY / file)
 
     @staticmethod
     def update_series(
