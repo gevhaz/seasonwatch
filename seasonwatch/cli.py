@@ -19,9 +19,18 @@ class Cli:
         configure.add_argument(
             "-t",
             "--tv-shows",
-            help="Add a tv-show",
+            help="Add tv-shows",
             action="store_true",
             dest="series",
+            required=False,
+        )
+
+        configure.add_argument(
+            "-a",
+            "--artist",
+            help="Add artists",
+            action="store_true",
+            dest="artists",
             required=False,
         )
 

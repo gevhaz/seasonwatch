@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from dateutil.parser import ParserError, parse
 from imdb.parser.http import IMDbHTTPAccessSystem
@@ -72,3 +72,15 @@ class Utils:
     @staticmethod
     def timestamp() -> str:
         return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+    @staticmethod
+    def sql_today() -> str:
+        return date.today().strftime("%Y-%m-%d 00:00:00")
+
+    @staticmethod
+    def sql_date_to_python_date(sql_date: str) -> datetime:
+        try:
+            python_date = datetime.strptime(sql_date, "%Y-%m-%d 00:00:00")
+        except ValueError:
+            raise SeasonwatchException(f"Couldn't parse '{sql_date}' as date.")
+        return python_date
