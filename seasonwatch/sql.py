@@ -15,17 +15,42 @@ class Sql:
         cursor = connection.cursor()
 
         cursor.execute("BEGIN TRANSACTION")
+
         cursor.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {Constants.MOVIES_TABLE} (
-                id INTEGER NOT NULL PRIMARY KEY,
+                id INTEGER NOT NULL PRIMARY KEY UNIQUE,
                 title TEXT NOT NULL,
                 number_of_checks INGEGER DEFAULT 0,
-                last_notified_date TEXT,
-                last_change_date TEXT
+                last_notified_date TEXT DEFAULT '1970-01-01 00:00:00',
+                last_change_date TEXT DEFAULT '1970-01-01 00:00:00'
             );
             """
         )
+
+        cursor.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {Constants.MUSIC_TABLE} (
+                album_id INTEGER NOT NULL PRIMARY KEY UNIQUE,
+                album_name TEXT NOT NULL,
+                artist_id INTEGER NOT NULL,
+                year INTEGER NOT NULL,
+                n_notifications INGEGER DEFAULT 0,
+                added_date TEXT NOT NULL,
+                last_notified_date TEXT DEFAULT '1970-01-01 00:00:00'
+            );
+            """
+        )
+
+        cursor.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {Constants.ARTIST_TABLE} (
+                artist_id INTEGER NOT NULL PRIMARY KEY UNIQUE,
+                artist_name TEXT NOT NULL
+            );
+            """
+        )
+
         cursor.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {Constants.SERIES_TABLE} (
@@ -33,8 +58,8 @@ class Sql:
                 title TEXT NOT NULL,
                 last_watched_season INTEGER DEFAULT 0,
                 number_of_checks INGEGER DEFAULT 0,
-                last_notified_date TEXT,
-                last_change_date TEXT
+                last_notified_date TEXT DEFAULT '1970-01-01 00:00:00',
+                last_change_date TEXT DEFAULT '1970-01-01 00:00:00'
             );
             """
         )
@@ -157,6 +182,139 @@ class Sql:
                     "last_check": check,
                     "last_notified": notified,
                     "last_changed": change,
+                }
+            )
+            # cursor.execute("COMMIT TRANSACTION")
+        connection.close()
+        return values
+
+    @staticmethod
+    def update_music(
+        album_id: str,
+        album: str,
+        artist_id: str,
+        year: str,
+        n_notifications: str,
+        added_date: str,
+        notified_date: str,
+    ) -> None:
+        connection = apsw.Connection(Constants.DATABASE_PATH)
+        cursor = connection.cursor()
+
+        cursor.execute("BEGIN TRANSACTION")
+        cursor.execute(
+            f"""
+            INSERT OR REPLACE INTO {Constants.MUSIC_TABLE} (
+                album_id,
+                album_name,
+                artist_id,
+                year,
+                n_notifications,
+                added_date,
+                last_notified_date
+            )
+            VALUES(
+                {album_id},
+                '{album}',
+                '{artist_id}',
+                '{year}',
+                {n_notifications},
+                '{added_date}',
+                '{notified_date}'
+            );
+            """
+        )
+        cursor.execute("COMMIT TRANSACTION")
+        connection.close()
+
+    @staticmethod
+    def read_all_music() -> list[dict[str, str]]:
+        """
+        Return data from the database for every album registered.
+        """
+        connection = apsw.Connection(Constants.DATABASE_PATH)
+        cursor = connection.cursor()
+        values: list[dict[str, str]] = []
+        for (
+            album_id,
+            album_name,
+            artist_id,
+            year,
+            number_of_notifications,
+            added_date,
+            last_notified,
+        ) in cursor.execute(
+            f"""
+            SELECT
+                album_id,
+                album_name,
+                artist_id,
+                year,
+                n_notifications,
+                added_date,
+                last_notified_date
+            FROM
+                {Constants.MUSIC_TABLE}
+            """
+        ):
+            # Safe to assume only one album with a specific ID
+            values.append(
+                {
+                    "album_id": album_id,
+                    "album_name": album_name,
+                    "artist_id": artist_id,
+                    "year": year,
+                    "n_notifications": number_of_notifications,
+                    "added_date": added_date,
+                    "last_notified": last_notified,
+                }
+            )
+            # cursor.execute("COMMIT TRANSACTION")
+        connection.close()
+        return values
+
+    @staticmethod
+    def add_artist(id: int, name: str) -> None:
+        connection = apsw.Connection(Constants.DATABASE_PATH)
+        cursor = connection.cursor()
+        cursor.execute("BEGIN TRANSACTION")
+        cursor.execute(
+            f"""
+            INSERT OR REPLACE INTO {Constants.ARTIST_TABLE} (
+                artist_id,
+                artist_name
+            )
+            VALUES(
+                {id},
+                '{name}'
+            );
+            """
+        )
+        cursor.execute("COMMIT TRANSACTION")
+        connection.close()
+
+    @staticmethod
+    def read_all_artists() -> list[dict[str, str]]:
+        """
+        Return all registered artist IDs together with the artist name.
+        """
+        connection = apsw.Connection(Constants.DATABASE_PATH)
+        cursor = connection.cursor()
+        values: list[dict[str, str]] = []
+        for id, artist in cursor.execute(
+            f"""
+            SELECT
+                artist_id,
+                artist_name
+            FROM
+                {Constants.ARTIST_TABLE}
+            """
+        ):
+            # Safe to assume only one album with a specific ID
+            values.append(
+                {
+                    "id": id,
+                    "name": artist,
                 }
             )
             # cursor.execute("COMMIT TRANSACTION")

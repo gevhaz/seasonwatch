@@ -40,3 +40,33 @@ class Configure:
 
             print("")
             add_more = True if input("Add more shows? (y/N) ") == "y" else False
+
+    @staticmethod
+    def artists() -> None:
+        """
+        Function for adding artists to the database, without adding any
+        albums.
+        """
+        add_more = True
+        while add_more:
+            name = input("Name of the artist: ")
+            id = input("ID of the artist (number after 'artist' in the Discogs url): ")
+            try:
+                id_int = int(id)
+            except ValueError:
+                raise SeasonwatchException(f"{id} doesn't seem to be an integer.")
+
+            print(f"title: {name}")
+            print(f"ID: {id_int}")
+            ok = False if input("Does this look ok? (Y/n) ") == "n" else True
+
+            if ok:
+                Sql.add_artist(
+                    id_int,
+                    name,
+                )
+            else:
+                print("Data was not saved")
+
+            print("")
+            add_more = True if input("Add more artists? (y/N) ") == "y" else False

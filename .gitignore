@@ -1,3 +1,4 @@
 dist
 series.yaml
 __pycache__
+discogs_token
