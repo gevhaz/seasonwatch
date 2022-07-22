@@ -34,7 +34,7 @@ class Sql:
                 album_id INTEGER NOT NULL PRIMARY KEY UNIQUE,
                 album_name TEXT NOT NULL,
                 artist_id INTEGER NOT NULL,
-                year INTEGER NOT NULL,
+                year INTEGER,
                 n_notifications INGEGER DEFAULT 0,
                 added_date TEXT NOT NULL,
                 last_notified_date TEXT DEFAULT '1970-01-01 00:00:00'
@@ -46,7 +46,8 @@ class Sql:
             f"""
             CREATE TABLE IF NOT EXISTS {Constants.ARTIST_TABLE} (
                 artist_id INTEGER NOT NULL PRIMARY KEY UNIQUE,
-                artist_name TEXT NOT NULL
+                artist_name TEXT NOT NULL,
+                new TEXT NOT NULL
             );
             """
         )
@@ -201,6 +202,10 @@ class Sql:
         connection = apsw.Connection(Constants.DATABASE_PATH)
         cursor = connection.cursor()
 
+        album = album.replace("'", "''")
+        if not year:
+            year = "NULL"
+
         cursor.execute("BEGIN TRANSACTION")
         cursor.execute(
             f"""
@@ -216,8 +221,8 @@ class Sql:
             VALUES(
                 {album_id},
                 '{album}',
-                '{artist_id}',
-                '{year}',
+                {artist_id},
+                {year},
                 {n_notifications},
                 '{added_date}',
                 '{notified_date}'
@@ -282,11 +287,37 @@ class Sql:
             f"""
             INSERT OR REPLACE INTO {Constants.ARTIST_TABLE} (
                 artist_id,
-                artist_name
+                artist_name,
+                new
             )
             VALUES(
                 {id},
-                '{name}'
+                '{name}',
+                'true'
+
+            );
+            """
+        )
+        cursor.execute("COMMIT TRANSACTION")
+        connection.close()
+
+    @staticmethod
+    def unmark_artist_new(id: str, name: str) -> None:
+        connection = apsw.Connection(Constants.DATABASE_PATH)
+        cursor = connection.cursor()
+        cursor.execute("BEGIN TRANSACTION")
+        cursor.execute(
+            f"""
+            INSERT OR REPLACE INTO {Constants.ARTIST_TABLE} (
+                artist_id,
+                artist_name,
+                new
+            )
+            VALUES(
+                {id},
+                '{name}',
+                'false'
+
             );
             """
         )
@@ -301,11 +332,12 @@ class Sql:
         connection = apsw.Connection(Constants.DATABASE_PATH)
         cursor = connection.cursor()
         values: list[dict[str, str]] = []
-        for id, artist in cursor.execute(
+        for id, artist, new in cursor.execute(
             f"""
             SELECT
                 artist_id,
-                artist_name
+                artist_name,
+                new
             FROM
                 {Constants.ARTIST_TABLE}
             """
@@ -315,6 +347,7 @@ class Sql:
                 {
                     "id": id,
                     "name": artist,
+                    "new": new,
                 }
             )
             # cursor.execute("COMMIT TRANSACTION")

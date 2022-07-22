@@ -174,16 +174,28 @@ class MediaWatcher:
                         )
                 else:
                     album_name = data.get("title")
-                    self.music["new"][album_name] = (
-                        f"New album '{album_name}' by {artist['name']} "
-                        "found!"
-                    )
-                    Sql.update_music(
-                        album_id=album_id,
-                        album=album_name,
-                        artist_id=artist_id,
-                        n_notifications="0",
-                        year=data.get("year"),
-                        added_date=Utils.sql_today(),
-                        notified_date=Utils.sql_today(),
-                    )
+                    if artist["new"] == "true":
+                        Sql.update_music(
+                            album_id=album_id,
+                            album=album_name,
+                            artist_id=artist_id,
+                            n_notifications="5",
+                            year=data.get("year"),
+                            added_date=Utils.sql_today(),
+                            notified_date="1970-01-01 00:00:00",
+                        )
+                    else:
+                        self.music["new"][
+                            album_name
+                        ] = f"New album '{album_name}' by {artist['name']} found!"
+                        Sql.update_music(
+                            album_id=album_id,
+                            album=album_name,
+                            artist_id=artist_id,
+                            n_notifications="0",
+                            year=data.get("year"),
+                            added_date=Utils.sql_today(),
+                            notified_date=Utils.sql_today(),
+                        )
+
+            Sql.unmark_artist_new(artist_id, artist["name"])

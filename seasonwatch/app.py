@@ -43,14 +43,6 @@ def main() -> int:
         os.mkdir(Constants.DATA_DIRECTORY)
 
     try:
-        watcher.check_for_new_seasons(ia)
-    except SeasonwatchException as e:
-        logging.error(
-            f"Seasonwatch encountered an error when checking for new seasons: {e}"
-        )
-        return 1
-
-    try:
         watcher.check_for_new_music()
     except SeasonwatchException as e:
         logging.error(
@@ -58,9 +50,30 @@ def main() -> int:
         )
         return 1
 
+    for album, message in watcher.music["new"].items():
+        print(Fore.BLUE + message)
+        notification = Notify.Notification.new(album, message)
+        notification.set_urgency(2)
+        notification.show()
+
+    for album, message in watcher.music["recent"].items():
+        print(Fore.GREEN + message)
+        notification = Notify.Notification.new(album, message)
+        notification.set_timeout(12000)
+        notification.show()
+
+    try:
+        watcher.check_for_new_seasons(ia)
+    except SeasonwatchException as e:
+        logging.error(
+            f"Seasonwatch encountered an error when checking for new seasons: {e}"
+        )
+        return 1
+
     for title, message in watcher.series["new"].items():
         print(Fore.BLUE + message)
         notification = Notify.Notification.new(title, message)
+        notification.set_timeout(10000)
         notification.show()
 
     for title, message in watcher.series["soon"].items():
@@ -73,14 +86,6 @@ def main() -> int:
 
     for title, message in watcher.series["nothing"].items():
         print(message)
-
-    for album, message in watcher.music["new"].items():
-        print(Fore.BLUE + message)
-        notification = Notify.Notification.new(album, message)
-        notification.show()
-
-    for album, message in watcher.music["recent"].items():
-        print(Fore.GREEN + message)
 
     return 0
 
