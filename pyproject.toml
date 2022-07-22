@@ -36,7 +36,8 @@ module = [
     "imdb.parser.http",
     "colorama",
     "gi",
-    "gi.repository"
+    "gi.repository",
+    "discogs_client"
 ]
 ignore_missing_imports = true
 
