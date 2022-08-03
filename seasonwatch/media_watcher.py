@@ -103,7 +103,15 @@ class MediaWatcher:
                 )
                 self.series["later"][name] = message
 
-    def check_for_new_music(self) -> None:
+    def check_for_new_music(self, discogs_token: str | None) -> None:
+        artists = Sql.read_all_artists()
+        music_data = Sql.read_all_music()
+
+        if len(artists) > 0 and discogs_token is None:
+            raise SeasonwatchException(
+                "Cannot check for new music since no discogs API token was found."
+            )
+
         with open("discogs_token") as f:
             discogs_token = f.readline()
         d = discogs_client.Client(
@@ -111,8 +119,6 @@ class MediaWatcher:
             user_token=discogs_token.strip(),
         )
 
-        artists = Sql.read_all_artists()
-        music_data = Sql.read_all_music()
         for artist in artists:
             artist_id = artist["id"]
             old_albums = [a for a in music_data if a["artist_id"] == artist_id]

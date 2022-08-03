@@ -34,4 +34,13 @@ class Cli:
             required=False,
         )
 
+        configure.add_argument(
+            "-d",
+            "--discogs-token",
+            help="Configure a discogs token necessary when checking for new music.",
+            action="store_true",
+            dest="discogs_token",
+            required=False,
+        )
+
         return parser.parse_args()
