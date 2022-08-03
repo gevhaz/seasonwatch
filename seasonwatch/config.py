@@ -1,3 +1,6 @@
+from configparser import ConfigParser
+
+from seasonwatch.constants import Constants
 from seasonwatch.exceptions import SeasonwatchException
 from seasonwatch.sql import Sql
 
@@ -70,3 +73,20 @@ class Configure:
 
             print("")
             add_more = True if input("Add more artists? (y/N) ") == "y" else False
+
+    @staticmethod
+    def discogs_token() -> None:
+        """Set the discogs token.
+
+        Set the discogs token used for interacting with discogs when
+        checking for new music.
+        """
+        token = input("Discogs API token: ")
+        if token != "":
+
+            parser = ConfigParser()
+            parser.add_section("Tokens")
+            parser.set("Tokens", "discogs_token", token)
+
+            with open(Constants.CONFIG_DIRECTORY / Constants.CONFIG_FILE, "w") as f:
+                parser.write(f)
