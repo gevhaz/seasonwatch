@@ -112,11 +112,9 @@ class MediaWatcher:
                 "Cannot check for new music since no discogs API token was found."
             )
 
-        with open("discogs_token") as f:
-            discogs_token = f.readline()
         d = discogs_client.Client(
             "Seasonwatch",
-            user_token=discogs_token.strip(),
+            user_token=discogs_token,
         )
 
         for artist in artists:
