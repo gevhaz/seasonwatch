@@ -4,7 +4,7 @@ from seasonwatch.sql import Sql
 
 class Configure:
     @staticmethod
-    def series() -> None:
+    def add_series() -> None:
         """
         Function for adding TV-shows to the database. Requests user from
         the input and the updates the database, with default values for
