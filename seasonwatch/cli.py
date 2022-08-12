@@ -1,4 +1,4 @@
-from argparse import ArgumentParser, Namespace
+from argparse import SUPPRESS, ArgumentParser, Namespace
 
 
 class Cli:
@@ -11,17 +11,35 @@ class Cli:
 
         subparsers = parser.add_subparsers(dest="subparser_name")
 
-        configure = subparsers.add_parser(
-            "configure",
-            help="Configure seasonwatch with new TV shows, movies or music",
+        tv = subparsers.add_parser(
+            "tv",
+            help="Change set of saved TV shows",
         )
 
-        configure.add_argument(
-            "-t",
-            "--tv-shows",
+        tv.add_argument(
+            "-r",
+            "--remove",
+            help="Interactively remove a TV show",
+            action="store_true",
+            dest="remove",
+            required=False,
+        )
+
+        tv.add_argument(
+            "-s",
+            "--step-up",
+            help=SUPPRESS,
+            action="store_true",
+            dest="step_up",
+            required=False,
+        )
+
+        tv.add_argument(
+            "-a",
+            "--add",
             help="Add tv-shows",
             action="store_true",
-            dest="series",
+            dest="add",
             required=False,
         )
 

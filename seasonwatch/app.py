@@ -36,9 +36,9 @@ def main() -> int:
         (Constants.CONFIG_PATH).touch()
 
     args = Cli.parse()
-    if args.subparser_name == "configure":
-        if args.series:
-            Configure.series()
+    if args.subparser_name == "tv":
+        if args.add:
+            Configure.add_series()
         return 0
 
     Notify.init("Seasonwatch")
