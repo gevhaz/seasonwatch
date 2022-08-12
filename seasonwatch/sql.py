@@ -61,6 +61,27 @@ class Sql:
                 os.remove(Constants.DATA_DIRECTORY / file)
 
     @staticmethod
+    def remove_series(id: str) -> None:
+        """Remove the show with the specified ID from the database.
+
+        Remove the show with the specified id from the database so that
+        it will no longer be checked for new seasons or have any traces
+        saved by seasonwatch.
+        """
+        connection = apsw.Connection(Constants.DATABASE_PATH)
+        cursor = connection.cursor()
+
+        cursor.execute("BEGIN TRANSACTION")
+        cursor.execute(
+            f"""
+            DELETE FROM {Constants.SERIES_TABLE}
+            WHERE id = {id};
+            """
+        )
+        cursor.execute("COMMIT TRANSACTION")
+        connection.close()
+
+    @staticmethod
     def update_series(
         id: str,
         title: str,
@@ -131,8 +152,10 @@ class Sql:
 
     @staticmethod
     def read_all_series() -> list[dict[str, str]]:
-        """
-        Return data from the database for every TV show registered.
+        """Return data from the database for every TV show registered.
+
+        Read all data about TV shows in the database, including data
+        about id, last watched season, number of checks, etc.
         """
         connection = apsw.Connection(Constants.DATABASE_PATH)
         cursor = connection.cursor()

@@ -39,6 +39,8 @@ def main() -> int:
     if args.subparser_name == "tv":
         if args.add:
             Configure.add_series()
+        if args.remove:
+            Configure.remove_series()
         return 0
 
     Notify.init("Seasonwatch")
