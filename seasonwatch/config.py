@@ -3,6 +3,34 @@ from seasonwatch.sql import Sql
 
 
 class Configure:
+    """Class for modifying the artists and shows to check."""
+
+    @staticmethod
+    def remove_series() -> None:
+        """Remove a TV show."""
+        shows = Sql.read_all_series()
+        menu_data: list[dict[str, str]] = []
+        for i, show in enumerate(shows):
+            menu_data.append(
+                {
+                    "index": str(i),
+                    "id": show["id"],
+                    "title": show["title"],
+                }
+            )
+        for item in menu_data:
+            print(f"[{item['index']}] {item['title']}")
+        selection: list[str] = input(
+            "Select the shows you want to remove, separated by commas: "
+        ).split(",")
+
+        shows_to_remove = [s["id"] for s in menu_data if s["index"] in selection]
+
+        for show_id in shows_to_remove:
+            title = Sql.read_series(show_id).get("title")
+            Sql.remove_series(show_id)
+            print(f"Successfully deleted '{title}'.")
+
     @staticmethod
     def add_series() -> None:
         """
