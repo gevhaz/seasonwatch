@@ -41,5 +41,12 @@ module = [
 ]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+# TODO: Remove once apsw type annotation is fixed:
+# https://github.com/rogerbinns/apsw/issues/438
+module = "apsw"
+follow_imports = "skip"
+follow_imports_for_stubs = true
+
 [tool.isort]
 profile = "black"
