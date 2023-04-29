@@ -37,12 +37,8 @@ def main() -> int:
 
     args = Cli.parse()
     if args.subparser_name == "configure":
-        if args.discogs_token:
-            Configure.discogs_token()
         if args.series:
             Configure.series()
-        if args.artists:
-            Configure.artists()
         return 0
 
     Notify.init("Seasonwatch")
@@ -51,29 +47,6 @@ def main() -> int:
 
     config = ConfigParser()
     config.read(Constants.CONFIG_PATH)
-
-    discogs_token = None
-    if config.has_option("Tokens", "discogs_token"):
-        discogs_token = config.get("Tokens", "discogs_token")
-    try:
-        watcher.check_for_new_music(discogs_token)
-    except SeasonwatchException as e:
-        logging.error(
-            f"Seasonwatch encountered an error when checking for new music: {e}"
-        )
-        return 1
-
-    for album, message in watcher.music["new"].items():
-        print(Fore.BLUE + message)
-        notification = Notify.Notification.new(album, message)
-        notification.set_urgency(2)
-        notification.show()
-
-    for album, message in watcher.music["recent"].items():
-        print(Fore.GREEN + message)
-        notification = Notify.Notification.new(album, message)
-        notification.set_timeout(12000)
-        notification.show()
 
     try:
         watcher.check_for_new_seasons(ia)
