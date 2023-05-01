@@ -6,6 +6,33 @@ class Configure:
     """Class for modifying the artists and shows to check."""
 
     @staticmethod
+    def step_up_series() -> None:
+        """Increase 'current season' of a TV show by 1."""
+        shows = Sql.read_all_series()
+        menu_data: list[dict[str, str]] = []
+        for i, show in enumerate(shows):
+            menu_data.append(
+                {
+                    "index": str(i),
+                    "id": show["id"],
+                    "title": show["title"],
+                }
+            )
+        for item in menu_data:
+            print(f"[{item['index']}] {item['title']}")
+        selection: list[str] = input(
+            "Select the shows you want to step up the current season of, separated by "
+            "commas: "
+        ).split(",")
+
+        shows_to_step_up = [s["id"] for s in menu_data if s["index"] in selection]
+
+        for show_id in shows_to_step_up:
+            title = Sql.read_series(show_id).get("title")
+            Sql.step_up_series(show_id)
+            print(f"Successfully stepped up '{title}'.")
+
+    @staticmethod
     def remove_series() -> None:
         """Remove a TV show."""
         shows = Sql.read_all_series()
