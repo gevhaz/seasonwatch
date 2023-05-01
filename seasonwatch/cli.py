@@ -1,4 +1,4 @@
-from argparse import SUPPRESS, ArgumentParser, Namespace
+from argparse import ArgumentParser, Namespace
 
 
 class Cli:
@@ -28,7 +28,7 @@ class Cli:
         tv.add_argument(
             "-s",
             "--step-up",
-            help=SUPPRESS,
+            help="Step up last watched season number of TV shows",
             action="store_true",
             dest="step_up",
             required=False,

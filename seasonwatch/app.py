@@ -41,6 +41,8 @@ def main() -> int:
             Configure.add_series()
         if args.remove:
             Configure.remove_series()
+        if args.step_up:
+            Configure.step_up_series()
         return 0
 
     Notify.init("Seasonwatch")
