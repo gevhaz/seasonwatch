@@ -75,6 +75,7 @@ class Utils:
 
     @staticmethod
     def sql_today() -> str:
+        """Get today's date in format used by SQLite."""
         return date.today().strftime("%Y-%m-%d 00:00:00")
 
     @staticmethod

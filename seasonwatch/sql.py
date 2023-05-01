@@ -92,8 +92,6 @@ class Sql:
     ) -> None:
         connection = apsw.Connection(Constants.DATABASE_PATH)
         cursor = connection.cursor()
-        # cursor.s
-        # cursor.setrowtrace(rowtrace)
 
         checks = checks + 1
 
@@ -111,6 +109,27 @@ class Sql:
             VALUES({id}, '{title}', {last}, {checks}, '{last_notify}', '{last_change}');
             """
         )
+        cursor.execute("COMMIT TRANSACTION")
+        connection.close()
+
+    @staticmethod
+    def step_up_series(id: str) -> None:
+        """Increase last_watched_season value by one for show with id.
+
+        Step up the last watched season number for the show with the
+        specified id in the database.
+        """
+        connection = apsw.Connection(Constants.DATABASE_PATH)
+        cursor = connection.cursor()
+
+        cursor.execute("BEGIN TRANSACTION")
+        transaction = f"""
+            UPDATE {Constants.SERIES_TABLE}
+            SET last_watched_season = last_watched_season + 1,
+                last_change_date = '{Utils.sql_today()}'
+            WHERE id = {id};
+            """
+        cursor.execute(transaction)
         cursor.execute("COMMIT TRANSACTION")
         connection.close()
 
