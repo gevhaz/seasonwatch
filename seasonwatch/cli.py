@@ -13,7 +13,7 @@ class Cli:
 
         tv = subparsers.add_parser(
             "tv",
-            help="Change set of saved TV shows",
+            help="Subcommand for working with TV shows",
         )
 
         tv.add_argument(
@@ -40,6 +40,15 @@ class Cli:
             help="Add tv-shows",
             action="store_true",
             dest="add",
+            required=False,
+        )
+
+        tv.add_argument(
+            "-l",
+            "--list",
+            help="List stored tv-shows",
+            action="store_true",
+            dest="list_shows",
             required=False,
         )
 
