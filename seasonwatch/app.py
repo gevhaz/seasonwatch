@@ -3,8 +3,7 @@ import sys
 from configparser import ConfigParser
 
 import gi
-
-from seasonwatch.cli import Cli
+from prettytable.prettytable import SINGLE_BORDER
 
 gi.require_version("Notify", "0.7")
 
@@ -13,6 +12,7 @@ from gi.repository import Notify
 from imdb import Cinemagoer
 from imdb.parser.http import IMDbHTTPAccessSystem
 
+from seasonwatch.cli import Cli
 from seasonwatch.config import Configure
 from seasonwatch.constants import Constants
 from seasonwatch.exceptions import SeasonwatchException
@@ -23,7 +23,6 @@ init(autoreset=True)
 
 
 def main() -> int:
-
     Sql.backup_database()
     Sql.ensure_table()
 
@@ -43,6 +42,11 @@ def main() -> int:
             Configure.remove_series()
         if args.step_up:
             Configure.step_up_series()
+        if args.list_shows:
+            table = Sql.get_printable_series_table()
+            table.set_style(SINGLE_BORDER)
+            table.align = "l"
+            print(table)
         return 0
 
     Notify.init("Seasonwatch")
