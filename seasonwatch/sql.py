@@ -1,10 +1,13 @@
 import os
 import shutil
 from pathlib import Path
+from typing import Any
 
 import apsw
+from prettytable.prettytable import from_db_cursor
 
 from seasonwatch.constants import Constants
+from seasonwatch.exceptions import SeasonwatchException
 from seasonwatch.utils import Utils
 
 
@@ -206,3 +209,39 @@ class Sql:
             # cursor.execute("COMMIT TRANSACTION")
         connection.close()
         return values
+
+    @staticmethod
+    def get_printable_series_table() -> Any:
+        """Get a table with data about all saved TV shows.
+
+        This function returns a PrettyTable object with the most
+        user-relevant data selected from the database. No styling is
+        performed on the table, except for naming the columns.
+
+        :raises SeasonwatchException: If there is an issues with reading
+            the data from the database.
+        :return: The table with information about all saved series.
+        """
+        connection = apsw.Connection(Constants.DATABASE_PATH)
+        cursor = connection.cursor()
+        cursor.execute(
+            f"""
+            SELECT
+                title,
+                last_watched_season,
+                'https://www.imdb.com/title/tt' || id
+            FROM
+                {Constants.SERIES_TABLE}
+            """
+        )
+        table = from_db_cursor(cursor)  # type: ignore
+        if table is None:
+            raise SeasonwatchException("Couldn't create table from database cursor")
+
+        table.field_names = [
+            "Title",
+            "Last watched season",
+            "IMDb link",
+        ]
+        connection.close()
+        return table
