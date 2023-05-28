@@ -22,7 +22,7 @@ class Sql:
         cursor.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {Constants.MOVIES_TABLE} (
-                id INTEGER NOT NULL PRIMARY KEY UNIQUE,
+                id TEXT NOT NULL PRIMARY KEY UNIQUE,
                 title TEXT NOT NULL,
                 number_of_checks INGEGER DEFAULT 0,
                 last_notified_date TEXT DEFAULT '1970-01-01 00:00:00',
@@ -34,7 +34,7 @@ class Sql:
         cursor.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {Constants.SERIES_TABLE} (
-                id INTEGER NOT NULL PRIMARY KEY UNIQUE,
+                id TEXT NOT NULL PRIMARY KEY UNIQUE,
                 title TEXT NOT NULL,
                 last_watched_season INTEGER DEFAULT 0,
                 number_of_checks INGEGER DEFAULT 0,
