@@ -1,10 +1,22 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+## [0.2.0] - 2023-05-31
 
-This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+### Added
 
-## [Unreleased]
+- Ability to list the shows stored in the database.
+- Ability to step up the "last watched" season numbers for TV shows.
+- Ability to remove TV shows.
+
+### Fixed
+
+- Fix bug where Cinemagoer (dependency) could no longer get the release dates
+  from the IMDb API by instead using "original air date".
+- Store IMDb ID as TEXT in the SQLite database to prevent losing initial zeroes.
+
+### Removed
+
+- All music-related functionality.
 
 ## [0.1.0] - 2022-08-07
 
