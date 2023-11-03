@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+### Breaking
+
+- Changed database location from a hardcoded `.seasonwatch/database.sqlite` to
+  `.local/share/seasonwatch/database.sqlite` or whereever your `XDG_DATA_HOME`
+  points to. Also changed configuration location from
+  `.config/seasonwatch/config` to `.config/seasonwatchrc` or wherever your
+  `XDG_CONFIG_HOME` points to. This is to align with XDG base directory
+  specification and respect user settings.
+
 ## [0.2.0] - 2023-05-31
 
 ### Added
