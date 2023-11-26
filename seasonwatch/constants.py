@@ -19,8 +19,5 @@ class Constants:
     CONFIG_FILE: Final[str] = "seasonwatchrc"
     CONFIG_PATH: Final[Path] = CONFIG_DIRECTORY / CONFIG_FILE
 
-    SERIES_TABLE: Final[str] = "series"
-    MOVIES_TABLE: Final[str] = "movies"
-
     API_VERSION: Final[str] = "3"
     API_BASE_URL: Final[str] = f"https://api.themoviedb.org/{API_VERSION}"
