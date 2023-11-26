@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Final
 
 
 class Constants:
@@ -22,3 +23,6 @@ class Constants:
 
     SERIES_TABLE = "series"
     MOVIES_TABLE = "movies"
+
+    API_VERSION: Final = 3
+    API_BASE_URL: Final = f"https://api.themoviedb.org/{API_VERSION}"

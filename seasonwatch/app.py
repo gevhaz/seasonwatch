@@ -3,7 +3,9 @@ import sys
 from configparser import ConfigParser
 
 import gi
+import requests
 from prettytable.prettytable import SINGLE_BORDER
+from requests.exceptions import HTTPError
 
 gi.require_version("Notify", "0.7")
 
@@ -35,6 +37,51 @@ def main() -> int:
         (Constants.CONFIG_PATH).touch()
 
     args = Cli.parse()
+
+    config = ConfigParser()
+    config.read(Constants.CONFIG_PATH)
+    if not config.has_section("Tokens"):
+        config.add_section("Tokens")
+        # Appending should preserve comments that the user has written.
+        with open(Constants.CONFIG_PATH, mode="a") as fp:
+            config.write(fp)
+
+    tmdb_token: str | None = config.get("Tokens", "tmdb_token", fallback=None)
+    if tmdb_token is None and args.subparser_name != "configure":
+        print("You need to set a TMDb token. Run 'seasonwatch configure'")
+        sys.exit(1)
+
+    if args.subparser_name == "configure":
+        new_tmdb_token = input("TMDB API Read Access Token: ")
+        print("Testing token...")
+        try:
+            requests.get(
+                f"{Constants.API_BASE_URL}/movie/11",
+                headers={
+                    "accept": "application/json",
+                    "Authorization": f"Bearer {new_tmdb_token}",
+                },
+            ).raise_for_status()
+        except HTTPError as e:
+            if e.response is not None and e.response.status_code == 401:
+                print("Invalid token. Please correct it.", file=sys.stderr)
+            else:
+                print(f"Error testing token: '{e}'", file=sys.stderr)
+            sys.exit(1)
+        print("Token is valid!")
+        config.set(section="Tokens", option="tmdb_token", value=new_tmdb_token)
+        overwrite_config = input("Write new config file, losing all comments? (Y/n): ")
+        if overwrite_config == "n" or overwrite_config == "N":
+            print(
+                f"Please manually update '{Constants.CONFIG_PATH}' with 'tmdb_token' "
+                "under [Tokens]"
+            )
+            sys.exit(0)
+        with open(Constants.CONFIG_PATH, mode="w") as fp:
+            config.write(fp)
+        print("Successfully set TMDB token!")
+        sys.exit(0)
+
     if args.subparser_name == "tv":
         if args.add:
             Configure.add_series()
@@ -52,9 +99,6 @@ def main() -> int:
     Notify.init("Seasonwatch")
     ia: IMDbHTTPAccessSystem = Cinemagoer(accessSystem="https")
     watcher = MediaWatcher()
-
-    config = ConfigParser()
-    config.read(Constants.CONFIG_PATH)
 
     try:
         watcher.check_for_new_seasons(ia)

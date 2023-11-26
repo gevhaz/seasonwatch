@@ -16,6 +16,11 @@ class Cli:
             help="Subcommand for working with TV shows",
         )
 
+        subparsers.add_parser(
+            "configure",
+            help="Configure Seasonwatch for use",
+        )
+
         tv.add_argument(
             "-r",
             "--remove",
