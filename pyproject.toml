@@ -15,6 +15,7 @@ cinemagoer = "^2022.2.11"
 apsw = "^3.38.5"
 python3-discogs-client = "^2.3.15"
 prettytable = "^3.7.0"
+requests = "^2.31.0"
 
 [tool.poetry.dev-dependencies]
 black = "^22.3.0"
@@ -26,6 +27,9 @@ types-python-dateutil = "^2.8.18"
 
 [tool.poetry.scripts]
 seasonwatch = 'seasonwatch.app:main'
+
+[tool.poetry.group.dev-dependencies.dependencies]
+types-requests = "^2.31.0.10"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
