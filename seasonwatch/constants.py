@@ -1,28 +1,25 @@
 import os
 from pathlib import Path
-from typing import Final
 
 
 class Constants:
-    DATA_DIRECTORY = Path(
+    DATA_DIRECTORY: Final[Path] = Path(
         os.environ.get(
             "XDG_DATA_HOME",
             default=Path.home() / ".local" / "share" / "seasonwatch",
         )
     )
-    CONFIG_DIRECTORY = Path(
+    CONFIG_DIRECTORY: Final[Path] = Path(
         os.environ.get(
             "XDG_CONFIG_HOME",
             default=Path.home() / ".config",
         )
     )
-    CONFIG_FILE = "seasonwatchrc"
-    CONFIG_PATH = CONFIG_DIRECTORY / CONFIG_FILE
-    DATABASE_FILE = "database.sqlite"
-    DATABASE_PATH = str(DATA_DIRECTORY / DATABASE_FILE)
+    CONFIG_FILE: Final[str] = "seasonwatchrc"
+    CONFIG_PATH: Final[Path] = CONFIG_DIRECTORY / CONFIG_FILE
 
-    SERIES_TABLE = "series"
-    MOVIES_TABLE = "movies"
+    SERIES_TABLE: Final[str] = "series"
+    MOVIES_TABLE: Final[str] = "movies"
 
-    API_VERSION: Final = 3
-    API_BASE_URL: Final = f"https://api.themoviedb.org/{API_VERSION}"
+    API_VERSION: Final[str] = "3"
+    API_BASE_URL: Final[str] = f"https://api.themoviedb.org/{API_VERSION}"

@@ -10,11 +10,14 @@ from seasonwatch.constants import Constants
 from seasonwatch.exceptions import SeasonwatchException
 from seasonwatch.utils import Utils
 
+DATABASE_FILE = "database.sqlite"
+DATABASE_PATH = str(Constants.DATA_DIRECTORY / DATABASE_FILE)
+
 
 class Sql:
     @staticmethod
     def ensure_table() -> None:
-        connection = apsw.Connection(Constants.DATABASE_PATH)
+        connection = apsw.Connection(DATABASE_PATH)
         cursor = connection.cursor()
 
         cursor.execute("BEGIN TRANSACTION")
@@ -49,11 +52,11 @@ class Sql:
     @staticmethod
     def backup_database() -> None:
         N_BACKUPS = 10
-        if Path(Constants.DATABASE_PATH).exists():
+        if Path(DATABASE_PATH).exists():
             backup_path = Path(
                 Constants.DATA_DIRECTORY / str(Utils.timestamp() + "_database.sqlite")
             )
-            shutil.copyfile(Constants.DATABASE_PATH, backup_path)
+            shutil.copyfile(DATABASE_PATH, backup_path)
 
         dir_content = os.listdir(Constants.DATA_DIRECTORY)
         dir_content.remove(Constants.DATABASE_FILE)
@@ -71,7 +74,7 @@ class Sql:
         it will no longer be checked for new seasons or have any traces
         saved by seasonwatch.
         """
-        connection = apsw.Connection(Constants.DATABASE_PATH)
+        connection = apsw.Connection(DATABASE_PATH)
         cursor = connection.cursor()
 
         cursor.execute("BEGIN TRANSACTION")
@@ -93,7 +96,7 @@ class Sql:
         last_change: str,
         last_notify: str,
     ) -> None:
-        connection = apsw.Connection(Constants.DATABASE_PATH)
+        connection = apsw.Connection(DATABASE_PATH)
         cursor = connection.cursor()
 
         checks = checks + 1
@@ -122,7 +125,7 @@ class Sql:
         Step up the last watched season number for the show with the
         specified id in the database.
         """
-        connection = apsw.Connection(Constants.DATABASE_PATH)
+        connection = apsw.Connection(DATABASE_PATH)
         cursor = connection.cursor()
 
         cursor.execute("BEGIN TRANSACTION")
@@ -141,7 +144,7 @@ class Sql:
         """
         Return data from the database for the season with id `id`
         """
-        connection = apsw.Connection(Constants.DATABASE_PATH)
+        connection = apsw.Connection(DATABASE_PATH)
         cursor = connection.cursor()
         values: dict[str, str] = {}
         for _, title, last, check, notified, change in cursor.execute(
@@ -179,7 +182,7 @@ class Sql:
         Read all data about TV shows in the database, including data
         about id, last watched season, number of checks, etc.
         """
-        connection = apsw.Connection(Constants.DATABASE_PATH)
+        connection = apsw.Connection(DATABASE_PATH)
         cursor = connection.cursor()
         values: list[dict[str, str]] = []
         for id, title, last, check, notified, change in cursor.execute(
@@ -222,7 +225,7 @@ class Sql:
             the data from the database.
         :return: The table with information about all saved series.
         """
-        connection = apsw.Connection(Constants.DATABASE_PATH)
+        connection = apsw.Connection(DATABASE_PATH)
         cursor = connection.cursor()
         cursor.execute(
             f"""
