@@ -4,12 +4,6 @@ from typing import Final
 
 
 class Constants:
-    DATA_DIRECTORY: Final[Path] = Path(
-        os.environ.get(
-            "XDG_DATA_HOME",
-            default=Path.home() / ".local" / "share" / "seasonwatch",
-        )
-    )
     CONFIG_DIRECTORY: Final[Path] = Path(
         os.environ.get(
             "XDG_CONFIG_HOME",
