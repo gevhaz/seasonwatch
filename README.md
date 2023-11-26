@@ -29,6 +29,24 @@ $ pip3 install seasonwatch-<the version you want to install>-py3-none-any.whl
 
 ## Usage
 
+### Initial configuration
+
+In order to use Seasonwatch, you need to have a TMDB API Read Access Token.
+Getting one is free, and you get it by registering on
+<https://www.themoviedb.org> and then creating an API key according to the
+[documentation](https://developer.themoviedb.org/docs). Creating an API key also
+gives you an API Read Access Token. Once you have it, manually edit your
+configuration file (usually `~/.config/seasonwatchrc`) or running:
+
+```command
+$ seasonwatch configure
+TMDB API Read Access Token: <your token, then Enter>
+Testing token...
+Token is valid!
+Write new config file, losing all comments? (Y/n): <Y>
+Successfully set TMDB token!
+```
+
 ### Adding new shows or artists
 
 Start by adding a TV show or an artist. For adding a TV show, run:
