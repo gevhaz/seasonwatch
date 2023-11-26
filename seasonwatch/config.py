@@ -3,7 +3,7 @@ from seasonwatch.sql import Sql
 
 
 class Configure:
-    """Class for modifying the artists and shows to check."""
+    """Class for modifying the shows to check."""
 
     @staticmethod
     def step_up_series() -> None:
