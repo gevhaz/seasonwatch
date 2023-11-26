@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 from imdb.parser.http import IMDbHTTPAccessSystem
 
+from seasonwatch.constants import Source
 from seasonwatch.exceptions import SeasonwatchException
 from seasonwatch.sql import Sql
 from seasonwatch.utils import Utils
@@ -37,6 +38,10 @@ class MediaWatcher:
             next_season = last_watched_season + 1
             name = series["title"]
             id = series["id"]
+            source = series["id_source"]
+            if source == Source.TMDB:
+                print(f"TMDB not yet supported. Skipping '{name}'")
+                continue
 
             old_data = Sql.read_series(id)
 
@@ -49,6 +54,7 @@ class MediaWatcher:
                 int(old_data.get("last_season", 0)),
                 last_change,
                 last_notify,
+                source,
             )
 
             try:

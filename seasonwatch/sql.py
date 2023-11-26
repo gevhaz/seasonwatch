@@ -1,11 +1,12 @@
 import os
 import shutil
 from pathlib import Path
-from typing import Any, Final
+from typing import Any, Final, TypedDict
 
 import apsw
 from prettytable.prettytable import from_db_cursor
 
+from seasonwatch.constants import Source
 from seasonwatch.exceptions import SeasonwatchException
 from seasonwatch.utils import Utils
 
@@ -24,7 +25,47 @@ SERIES_TABLE: Final[str] = "series"
 MOVIES_TABLE: Final[str] = "movies"
 
 
+class DBRecord(TypedDict):
+    id: str
+    title: str
+    last_season: str
+    last_check: str
+    last_notified: str
+    last_changed: str
+    id_source: Source
+
+
 class Sql:
+    @staticmethod
+    def ensure_id_source_exist(connection: apsw.Connection) -> None:
+        """Add id_source column if missing.
+
+        Ensure that 'id_source' column exists in the TV Series table.
+        """
+        cursor = connection.cursor()
+        table_info = cursor.execute(f"""PRAGMA table_info({SERIES_TABLE})""")
+        column_names = [row[1] for row in table_info]
+        if "id_source" not in column_names:
+            cursor.execute("BEGIN TRANSACTION")
+            cursor.execute(
+                f"""
+                ALTER TABLE {SERIES_TABLE}
+                ADD COLUMN id_source TEXT
+                DEFAULT '{Source.TMDB}';
+                """
+            )
+            cursor.execute(
+                f"""
+                UPDATE {SERIES_TABLE}
+                SET id_source = '{Source.IMDB}';
+                """
+            )
+            cursor.execute("COMMIT TRANSACTION")
+            print(
+                "Column 'id_source' was missing from TV Series table. "
+                "All existing series have been given the ID source 'IMDb'"
+            )
+
     @staticmethod
     def ensure_table() -> None:
         """Ensure that all expected tables exist in database.
@@ -60,11 +101,18 @@ class Sql:
                 last_watched_season INTEGER DEFAULT 0,
                 number_of_checks INGEGER DEFAULT 0,
                 last_notified_date TEXT DEFAULT '1970-01-01 00:00:00',
-                last_change_date TEXT DEFAULT '1970-01-01 00:00:00'
+                last_change_date TEXT DEFAULT '1970-01-01 00:00:00',
+                id_source TEXT DEFAULT '{Source.TMDB}'
             );
             """
         )
+
         cursor.execute("COMMIT TRANSACTION")
+        connection.close()
+
+        # Can the previous connection be reused instead?
+        connection = apsw.Connection(DATABASE_PATH)
+        Sql.ensure_id_source_exist(connection)
         connection.close()
 
     @staticmethod
@@ -120,9 +168,12 @@ class Sql:
         checks: int,
         last_change: str,
         last_notify: str,
+        id_source: Source,
     ) -> None:
         connection = apsw.Connection(DATABASE_PATH)
         cursor = connection.cursor()
+
+        source = id_source.value
 
         checks = checks + 1
 
@@ -135,9 +186,18 @@ class Sql:
                 last_watched_season,
                 number_of_checks,
                 last_notified_date,
-                last_change_date
+                last_change_date,
+                id_source
             )
-            VALUES({id}, '{title}', {last}, {checks}, '{last_notify}', '{last_change}');
+            VALUES(
+                {id},
+                '{title}',
+                {last},
+                {checks},
+                '{last_notify}',
+                '{last_change}',
+                '{source}'
+            );
             """
         )
         cursor.execute("COMMIT TRANSACTION")
@@ -166,13 +226,11 @@ class Sql:
 
     @staticmethod
     def read_series(id: str) -> dict[str, str]:
-        """
-        Return data from the database for the season with id `id`
-        """
+        """Return data from the database for the season with id `id`"""
         connection = apsw.Connection(DATABASE_PATH)
         cursor = connection.cursor()
         values: dict[str, str] = {}
-        for _, title, last, check, notified, change in cursor.execute(
+        for _, title, last, check, notified, change, id_source in cursor.execute(
             f"""
             SELECT
                 id,
@@ -180,7 +238,8 @@ class Sql:
                 last_watched_season,
                 number_of_checks,
                 last_notified_date,
-                last_change_date
+                last_change_date,
+                id_source
             FROM
                 {SERIES_TABLE}
             WHERE
@@ -195,13 +254,13 @@ class Sql:
                 "last_check": check,
                 "last_notified": notified,
                 "last_changed": change,
+                "id_source": id_source,
             }
-            # cursor.execute("COMMIT TRANSACTION")
         connection.close()
         return values
 
     @staticmethod
-    def read_all_series() -> list[dict[str, str]]:
+    def read_all_series() -> list[DBRecord]:
         """Return data from the database for every TV show registered.
 
         Read all data about TV shows in the database, including data
@@ -209,8 +268,9 @@ class Sql:
         """
         connection = apsw.Connection(DATABASE_PATH)
         cursor = connection.cursor()
-        values: list[dict[str, str]] = []
-        for id, title, last, check, notified, change in cursor.execute(
+        # Should be TypedDict instead of allowing any value to be Source
+        values: list[DBRecord] = []
+        for id, title, last, check, notified, change, id_source in cursor.execute(
             f"""
             SELECT
                 id,
@@ -218,7 +278,8 @@ class Sql:
                 last_watched_season,
                 number_of_checks,
                 last_notified_date,
-                last_change_date
+                last_change_date,
+                id_source
             FROM
                 {SERIES_TABLE}
             """
@@ -232,9 +293,11 @@ class Sql:
                     "last_check": check,
                     "last_notified": notified,
                     "last_changed": change,
+                    "id_source": Source.IMDB
+                    if id_source == Source.IMDB.value
+                    else Source.TMDB,
                 }
             )
-            # cursor.execute("COMMIT TRANSACTION")
         connection.close()
         return values
 
@@ -257,9 +320,13 @@ class Sql:
             SELECT
                 title,
                 last_watched_season,
-                'https://www.imdb.com/title/tt' || id
+                CASE
+                    WHEN id_source = '{Source.IMDB}'
+                    THEN 'https://www.imdb.com/title/tt' || id
+                    ELSE 'https://www.themoviedb.org/tv/' || id
+                END
             FROM
-                {SERIES_TABLE}
+                {SERIES_TABLE};
             """
         )
         table = from_db_cursor(cursor)  # type: ignore
@@ -269,7 +336,7 @@ class Sql:
         table.field_names = [
             "Title",
             "Last watched season",
-            "IMDb link",
+            "Hyperlink",
         ]
         connection.close()
         return table
