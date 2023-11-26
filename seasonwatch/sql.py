@@ -6,12 +6,19 @@ from typing import Any, Final
 import apsw
 from prettytable.prettytable import from_db_cursor
 
-from seasonwatch.constants import Constants
 from seasonwatch.exceptions import SeasonwatchException
 from seasonwatch.utils import Utils
 
-DATABASE_FILE = "database.sqlite"
-DATABASE_PATH = str(Constants.DATA_DIRECTORY / DATABASE_FILE)
+DATA_DIRECTORY: Final[Path] = Path(
+    os.environ.get(
+        "XDG_DATA_HOME",
+        default=Path.home() / ".local" / "share" / "seasonwatch",
+    )
+)
+DATABASE_FILE: Final[str] = "database.sqlite"
+DATABASE_PATH: Final[str] = str(DATA_DIRECTORY / DATABASE_FILE)
+
+N_BACKUPS: Final[int] = 10
 
 SERIES_TABLE: Final[str] = "series"
 MOVIES_TABLE: Final[str] = "movies"
@@ -20,6 +27,14 @@ MOVIES_TABLE: Final[str] = "movies"
 class Sql:
     @staticmethod
     def ensure_table() -> None:
+        """Ensure that all expected tables exist in database.
+
+        Ensure that all tables supported by Seasonwatch is present in
+        the Seasonwatch database.
+        """
+        if not DATA_DIRECTORY.exists():
+            DATA_DIRECTORY.mkdir(parents=True, exist_ok=True)
+
         connection = apsw.Connection(DATABASE_PATH)
         cursor = connection.cursor()
 
@@ -54,20 +69,27 @@ class Sql:
 
     @staticmethod
     def backup_database() -> None:
-        N_BACKUPS = 10
+        """Backup a dated Seasonwatch database.
+
+        Create a backup of the Seasonwatch database and remove the
+        oldest backup if there are more than ``N_BACKUPS`` of them.
+        """
+        if not DATA_DIRECTORY.exists():
+            # Nothing to backup if data directory doesn't exist
+            return
         if Path(DATABASE_PATH).exists():
             backup_path = Path(
-                Constants.DATA_DIRECTORY / str(Utils.timestamp() + "_database.sqlite")
+                DATA_DIRECTORY / str(Utils.timestamp() + "_database.sqlite")
             )
             shutil.copyfile(DATABASE_PATH, backup_path)
 
-        dir_content = os.listdir(Constants.DATA_DIRECTORY)
-        dir_content.remove(Constants.DATABASE_FILE)
+        dir_content = os.listdir(DATA_DIRECTORY)
+        dir_content.remove(DATABASE_FILE)
         dir_content.sort(reverse=True)
         files_to_remove = set(dir_content).difference(set(dir_content[0:N_BACKUPS]))
         for file in files_to_remove:
             if "database" in file:
-                os.remove(Constants.DATA_DIRECTORY / file)
+                os.remove(DATA_DIRECTORY / file)
 
     @staticmethod
     def remove_series(id: str) -> None:

@@ -28,9 +28,6 @@ def main() -> int:
     Sql.backup_database()
     Sql.ensure_table()
 
-    if not Constants.DATA_DIRECTORY.exists():
-        Constants.DATA_DIRECTORY.mkdir(parents=True, exist_ok=True)
-
     if not Constants.CONFIG_DIRECTORY.exists():
         Constants.CONFIG_DIRECTORY.mkdir(parents=True, exist_ok=True)
     if not (Constants.CONFIG_PATH).exists():
