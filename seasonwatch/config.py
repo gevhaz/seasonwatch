@@ -1,3 +1,4 @@
+from seasonwatch.constants import Source
 from seasonwatch.exceptions import SeasonwatchException
 from seasonwatch.sql import Sql
 
@@ -60,15 +61,16 @@ class Configure:
 
     @staticmethod
     def add_series() -> None:
-        """
-        Function for adding TV-shows to the database. Requests user from
+        """Interactively add one or more TV-shows to the database.
+
+        Add one or more TV-shows to the database. Requests user from
         the input and the updates the database, with default values for
         that which the user doesn't provide.
         """
         add_more = True
         while add_more:
-            title = input("Title of the show: ")
-            id = input("ID of the show (after 'tt' in the url on IMDB): ")
+            title = input("What the show should be called: ")
+            id = input("ID of the show (after 'tv/' in the URL on TMDB): ")
             last_season = input("Last watched season: ")
 
             try:
@@ -77,7 +79,7 @@ class Configure:
                 raise SeasonwatchException(f"Couldn't parse '{last_season}' as an int")
 
             print(f"title: {title}")
-            print(f"ID: {id}")
+            print(f"TMDB ID: {id}")
             print(f"Last watched season: {last_season}")
             ok = False if input("Does this look ok? (Y/n) ") == "n" else True
 
@@ -89,6 +91,7 @@ class Configure:
                     0,
                     "1970-01-01 00:00:00",
                     "1970-01-01 00:00:00",
+                    Source.TMDB,
                 )
             else:
                 print("Data was not saved")
