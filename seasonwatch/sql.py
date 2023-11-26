@@ -1,7 +1,7 @@
 import os
 import shutil
 from pathlib import Path
-from typing import Any
+from typing import Any, Final
 
 import apsw
 from prettytable.prettytable import from_db_cursor
@@ -12,6 +12,9 @@ from seasonwatch.utils import Utils
 
 DATABASE_FILE = "database.sqlite"
 DATABASE_PATH = str(Constants.DATA_DIRECTORY / DATABASE_FILE)
+
+SERIES_TABLE: Final[str] = "series"
+MOVIES_TABLE: Final[str] = "movies"
 
 
 class Sql:
@@ -24,7 +27,7 @@ class Sql:
 
         cursor.execute(
             f"""
-            CREATE TABLE IF NOT EXISTS {Constants.MOVIES_TABLE} (
+            CREATE TABLE IF NOT EXISTS {MOVIES_TABLE} (
                 id TEXT NOT NULL PRIMARY KEY UNIQUE,
                 title TEXT NOT NULL,
                 number_of_checks INGEGER DEFAULT 0,
@@ -36,7 +39,7 @@ class Sql:
 
         cursor.execute(
             f"""
-            CREATE TABLE IF NOT EXISTS {Constants.SERIES_TABLE} (
+            CREATE TABLE IF NOT EXISTS {SERIES_TABLE} (
                 id TEXT NOT NULL PRIMARY KEY UNIQUE,
                 title TEXT NOT NULL,
                 last_watched_season INTEGER DEFAULT 0,
@@ -80,7 +83,7 @@ class Sql:
         cursor.execute("BEGIN TRANSACTION")
         cursor.execute(
             f"""
-            DELETE FROM {Constants.SERIES_TABLE}
+            DELETE FROM {SERIES_TABLE}
             WHERE id = {id};
             """
         )
@@ -104,7 +107,7 @@ class Sql:
         cursor.execute("BEGIN TRANSACTION")
         cursor.execute(
             f"""
-            INSERT OR REPLACE INTO {Constants.SERIES_TABLE} (
+            INSERT OR REPLACE INTO {SERIES_TABLE} (
                 id,
                 title,
                 last_watched_season,
@@ -130,7 +133,7 @@ class Sql:
 
         cursor.execute("BEGIN TRANSACTION")
         transaction = f"""
-            UPDATE {Constants.SERIES_TABLE}
+            UPDATE {SERIES_TABLE}
             SET last_watched_season = last_watched_season + 1,
                 last_change_date = '{Utils.sql_today()}'
             WHERE id = {id};
@@ -157,7 +160,7 @@ class Sql:
                 last_notified_date,
                 last_change_date
             FROM
-                {Constants.SERIES_TABLE}
+                {SERIES_TABLE}
             WHERE
                 id = {id};
             """
@@ -195,7 +198,7 @@ class Sql:
                 last_notified_date,
                 last_change_date
             FROM
-                {Constants.SERIES_TABLE}
+                {SERIES_TABLE}
             """
         ):
             # Safe to assume only one show with a specific ID
@@ -234,7 +237,7 @@ class Sql:
                 last_watched_season,
                 'https://www.imdb.com/title/tt' || id
             FROM
-                {Constants.SERIES_TABLE}
+                {SERIES_TABLE}
             """
         )
         table = from_db_cursor(cursor)  # type: ignore
