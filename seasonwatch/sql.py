@@ -57,7 +57,7 @@ class Sql:
             cursor.execute(
                 f"""
                 UPDATE {SERIES_TABLE}
-                SET id_source = '{Source.IMDB}';
+                SET id_source = '{Source.IMDB.value}';
                 """
             )
             cursor.execute("COMMIT TRANSACTION")
@@ -102,7 +102,7 @@ class Sql:
                 number_of_checks INGEGER DEFAULT 0,
                 last_notified_date TEXT DEFAULT '1970-01-01 00:00:00',
                 last_change_date TEXT DEFAULT '1970-01-01 00:00:00',
-                id_source TEXT DEFAULT '{Source.TMDB}'
+                id_source TEXT DEFAULT '{Source.TMDB.value}'
             );
             """
         )
@@ -321,7 +321,7 @@ class Sql:
                 title,
                 last_watched_season,
                 CASE
-                    WHEN id_source = '{Source.IMDB}'
+                    WHEN id_source = '{Source.IMDB.value}'
                     THEN 'https://www.imdb.com/title/tt' || id
                     ELSE 'https://www.themoviedb.org/tv/' || id
                 END
