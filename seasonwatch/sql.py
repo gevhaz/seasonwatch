@@ -85,7 +85,7 @@ class Sql:
             f"""
             CREATE TABLE IF NOT EXISTS {MOVIES_TABLE} (
                 id TEXT NOT NULL PRIMARY KEY UNIQUE,
-                title TEXT NOT NULL,
+                title TEXT NOT NULL UNIQUE,
                 number_of_checks INGEGER DEFAULT 0,
                 last_notified_date TEXT DEFAULT '1970-01-01 00:00:00',
                 last_change_date TEXT DEFAULT '1970-01-01 00:00:00'
@@ -97,7 +97,7 @@ class Sql:
             f"""
             CREATE TABLE IF NOT EXISTS {SERIES_TABLE} (
                 id TEXT NOT NULL PRIMARY KEY UNIQUE,
-                title TEXT NOT NULL,
+                title TEXT NOT NULL UNIQUE,
                 last_watched_season INTEGER DEFAULT 0,
                 number_of_checks INGEGER DEFAULT 0,
                 last_notified_date TEXT DEFAULT '1970-01-01 00:00:00',
@@ -169,7 +169,30 @@ class Sql:
         last_change: str,
         last_notify: str,
         id_source: Source,
+        full_replace: bool = False,
     ) -> None:
+        """Add or update a record in the series table.
+
+        Adds or updates a series in the series table. Will add if the ID
+        doesn't exist. All columns have to be provided. If
+        "full_replace" is True, any series with the title ``title`` will
+        be deleted, essentially readding the record with the new values.
+
+        :param id: The ID of the series.
+        :param title: The user-provided name of the series.
+        :param last: The last seen season by the user.
+        :param checks: Number of times this TV show has been checked for
+            new seasons. 1 will be added when calling this function, so
+            please simply send back whatever value was there before for
+            this record.
+        :param last_change: Last time this series was updated in the
+            database.
+        :param last_notify: Last time the user was notified about the
+            status of new seasons for this series.
+        :param id_source: Where the ID is applicable, eg TMDB.
+        :param full_replace: Delete any record with matching ``title``
+            value before adding the new data.
+        """
         connection = apsw.Connection(DATABASE_PATH)
         cursor = connection.cursor()
 
@@ -178,6 +201,13 @@ class Sql:
         checks = checks + 1
 
         cursor.execute("BEGIN TRANSACTION")
+        if full_replace:
+            cursor.execute(
+                f"""
+                DELETE FROM {SERIES_TABLE}
+                WHERE title = '{title}';
+                """
+            )
         cursor.execute(
             f"""
             INSERT OR REPLACE INTO {SERIES_TABLE} (
