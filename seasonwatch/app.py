@@ -5,6 +5,7 @@ from configparser import ConfigParser
 import gi
 import requests
 from prettytable.prettytable import SINGLE_BORDER
+from requests import Session
 from requests.exceptions import HTTPError
 
 gi.require_version("Notify", "0.7")
@@ -97,8 +98,16 @@ def main() -> int:
     ia: IMDbHTTPAccessSystem = Cinemagoer(accessSystem="https")
     watcher = MediaWatcher()
 
+    tmdb_session = Session()
+    tmdb_session.headers.update(
+        {
+            "accept": "application/json",
+            "Authorization": f"Bearer {tmdb_token}",
+        }
+    )
+
     try:
-        watcher.check_for_new_seasons(ia)
+        watcher.check_for_new_seasons(session=tmdb_session, ia=ia)
     except SeasonwatchException as e:
         logging.error(
             f"Seasonwatch encountered an error when checking for new seasons: {e}"
