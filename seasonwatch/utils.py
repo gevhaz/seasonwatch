@@ -1,8 +1,9 @@
 from datetime import date, datetime
+from typing import Any
 
-from dateutil.parser import ParserError, parse
-from imdb.parser.http import IMDbHTTPAccessSystem
+from requests import HTTPError, Session
 
+from seasonwatch.constants import Constants
 from seasonwatch.exceptions import SeasonwatchException
 
 
@@ -10,58 +11,6 @@ class Utils:
     """
     Collection of utilities functions that are generally useful
     """
-
-    @staticmethod
-    def get_next_release_date(
-        title: str,
-        next_season: int,
-        next_episode_id: str,
-        ia: IMDbHTTPAccessSystem,
-    ) -> datetime:
-        episode = ia.get_movie(next_episode_id)
-        episode_air_date = episode.get("original air date")
-
-        # There is no data about the release date of the new season
-        if episode_air_date is None:
-            print(
-                f"Season {next_season} of {title} is announced but "
-                "the release date is not yet determined"
-            )
-
-        if not isinstance(episode_air_date, str):
-            raise SeasonwatchException("Something is wrong with the air date data")
-
-        next_season_earliest_release: datetime = parse(
-            episode_air_date,
-            default=datetime(2022, 12, 31),
-        )
-
-        return next_season_earliest_release
-
-    @staticmethod
-    def get_next_episode_id(
-        id: str,
-        last_watched_season: int,
-        ia: IMDbHTTPAccessSystem,
-    ) -> str | None:
-        next_season = last_watched_season + 1
-
-        imdb_all_seasons_data = ia.get_movie(id, "episodes").data.get("episodes")
-
-        if imdb_all_seasons_data is None:
-            raise SeasonwatchException("Couldn't load episodes. Skipping...")
-
-        latest_available_season: int = max(imdb_all_seasons_data.keys())
-
-        if latest_available_season <= last_watched_season:
-            return None
-
-        try:
-            next_episode_id = str(imdb_all_seasons_data[next_season][1].getID())
-        except ParserError:
-            return None
-
-        return next_episode_id
 
     @staticmethod
     def timestamp() -> str:
@@ -79,3 +28,29 @@ class Utils:
         except ValueError:
             raise SeasonwatchException(f"Couldn't parse '{sql_date}' as date.")
         return python_date
+
+    @staticmethod
+    def get_next_season(
+        id: str, current_season: int, session: Session
+    ) -> dict[str, Any] | None:
+        """Find the air date of the next season of a series."""
+        url = f"{Constants.API_BASE_URL}/tv/{id}"
+        try:
+            response = session.get(url)
+            response.raise_for_status()
+            response_json = response.json()
+        except HTTPError as e:
+            raise SeasonwatchException(
+                f"Failed connecting to TMDB for new seasons information: {e}"
+            )
+
+        seasons = response_json["seasons"]
+        next_seasons = [s for s in seasons if s["season_number"] == current_season + 1]
+        if not next_seasons:
+            return None
+
+        next_season = next_seasons[0]
+        if not isinstance(next_season, dict):
+            raise SeasonwatchException(f"Can't pase data from TMDB: {next_season}")
+
+        return next_season
