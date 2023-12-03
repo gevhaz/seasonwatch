@@ -12,8 +12,6 @@ gi.require_version("Notify", "0.7")
 
 from colorama import Fore, init
 from gi.repository import Notify
-from imdb import Cinemagoer
-from imdb.parser.http import IMDbHTTPAccessSystem
 
 from seasonwatch.cli import Cli
 from seasonwatch.config import Configure
@@ -95,7 +93,6 @@ def main() -> int:
         return 0
 
     Notify.init("Seasonwatch")
-    ia: IMDbHTTPAccessSystem = Cinemagoer(accessSystem="https")
     watcher = MediaWatcher()
 
     tmdb_session = Session()
@@ -107,7 +104,7 @@ def main() -> int:
     )
 
     try:
-        watcher.check_for_new_seasons(session=tmdb_session, ia=ia)
+        watcher.check_for_new_seasons(session=tmdb_session)
     except SeasonwatchException as e:
         logging.error(
             f"Seasonwatch encountered an error when checking for new seasons: {e}"
