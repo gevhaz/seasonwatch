@@ -1,29 +1,37 @@
-# seasonwatch
+# Seasonwatch
 
 ## Introduction
 
-**seasonwatch** is an app that helps you keep track of when new seasons of TV
-shows you are following are released.
+**Seasonwatch** is an application that helps you keep track of when new seasons
+of TV show you are following are released.
+
+## Dependencies
+
+- Python >= 3.10
+- libgirepository ([Arch
+  Linux](https://archlinux.org/packages/extra/x86_64/libgirepository/),
+  [Ubuntu](https://packages.ubuntu.com/jammy/libgirepository1.0-dev)) (for
+  showing notifications)
 
 ## Installation
 
-You will need Python 3.10.
+Download the wheel from the release page here on Github and install it with:
 
-First install the one dependency that cannot be automatically installed with
-pip, which is the library for handling GObject instrospection data. For Ubuntu,
-it's done like so:
-
-```shell
-# apt install libgirepository1.0-dev
+```console
+$ pip install seasonwatch-<the version you want to install>-py3-none-any.whl
 ```
 
-It is needed for showing notifications.
+Alternatively, clone the repository and run the following in it:
 
-Next, download the wheel from the release page here on Github and install it
-with:
+```console
+$ poetry build
+$ pip install dist/<your newly built package>
+```
 
-```shell
-$ pip3 install seasonwatch-<the version you want to install>-py3-none-any.whl
+You can also run it using poetry directly if you just want to try it:
+
+```console
+$ poetry run seasonwatch
 ```
 
 ## Usage
@@ -35,9 +43,9 @@ Getting one is free, and you get it by registering on
 <https://www.themoviedb.org> and then creating an API key according to the
 [documentation](https://developer.themoviedb.org/docs). Creating an API key also
 gives you an API Read Access Token. Once you have it, manually edit your
-configuration file (usually `~/.config/seasonwatchrc`) or running:
+configuration file (usually `~/.config/seasonwatchrc`) or run:
 
-```command
+```console
 $ seasonwatch configure
 TMDB API Read Access Token: <your token, then Enter>
 Testing token...
@@ -46,46 +54,71 @@ Write new config file, losing all comments? (Y/n): <Y>
 Successfully set TMDB token!
 ```
 
-### Adding new shows or artists
+### Adding new TV show
 
-Start by adding a TV show or an artist. For adding a TV show, run:
+You can interactively add a new TV show to your database by running the below
+command. You'll be prompted to fill in the title of the TV show, the ID, and the
+last season you've seen. For example, if you've just watched season 3 of The
+Expanse and want to be notified when the next season is released, you'd fill in
+it like so:
 
-```shell
-$ seasonwatch configure --tv-shows
+```console
+$ seasonwatch tv --add
+What the show should be called: The Expanse
+ID of the show (after 'tv/' in the URL on TMDB): 63639
+Last watched season: 3
+title: The Expanse
+TMDB ID: 63639
+Last watched season: 3
+Does this look ok? (Y/n) Y
+
+Add more shows? (y/N)
 ```
 
-You'll be prompted to fill in the title of the show, the ID, and the last season
-you've seen. For example, if you've just watched season 4 of The Expanse and
-want to be notified when the next season is released, you'd fill in it like so:
+You can use anything you want as the title. The ID is in the URL of the TV
+show on TMDB. In this case, the page on TMDB for the TV show is:
+<https://www.themoviedb.org/tv/63639-the-expanse>
 
-```text
-Title of the show: The Expanse
-ID of the show (after 'tt' in the url on IMDB): 3230854
-Last watched season: 4
+The ID is the number that comes after "tv/" in the URL, and before the title of
+the TV show. That is, "63639".
+
+You can verify that the TV show is added to the database by running:
+
+```console
+$ seasonwatch tv --list
+┌────────────────────────────────┬─────────────────────┬──────────────────────────────────────┐
+│ Title                          │ Last watched season │ Hyperlink                            │
+├────────────────────────────────┼─────────────────────┼──────────────────────────────────────┤
+│ The Expanse                    │ 3                   │ https://www.themoviedb.org/tv/63639  │
+└────────────────────────────────┴─────────────────────┴──────────────────────────────────────┘
 ```
-
-You can find the ID in the IMDb URL. In this case, the page on IMDb for the show
-is: https://www.imdb.com/title/tt3230854/?ref_=fn_al_tt_1
-
-the ID is the number that comes after "tt" in the URL, and before the first '/'
-after that, that is '3230854'.
 
 ### Checking for new seasons
 
-Just run seasonwatch like so:
+Just run Seasonwatch like so:
 
-```
+```console
 $ seasonwatch
+Season 4 of The Expanse is out already!
 ```
 
-You will get notifications for the the most urgent finds, but all info will be
-printed on the command line. It might be a good idea to automate the running of
-the script with e.g. a cron job that runs it regularly.
+You will be shown notifications for shows that are already out or coming out
+soon, and the information for all shows in your database will be printed on the
+command line. It might be a good idea to automate the running of the script with
+a cron job that runs it regularly. Even when run in the background, Seasonwatch
+will show you desktop notifications.
+
+## Migration to TMDB
+
+The IMDb API is no longer working, so from version 0.3.0 onward, TMDB is used
+instead. If your database was created before then, you will be asked to migrate
+when running Seasonwatch for the first time after installing the new version.
+There is a helper that will suggest corresponding TMDB IDs for your old shows.
 
 ## Development
 
-seasonwatch currently supports checking for new TV show seasons only. Version
-0.2.0 has been released and it should be good to use by anyone.
+Seasonwatch currently supports checking for new TV show seasons only. Version
+0.2.0 has been released and is ready to be used for this purpose.
 
 ### Bugs
 
