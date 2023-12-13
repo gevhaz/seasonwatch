@@ -117,15 +117,26 @@ There is a helper that will suggest corresponding TMDB IDs for your old shows.
 
 ## Development
 
+### Status
+
 Seasonwatch currently supports checking for new TV show seasons only. Version
 0.2.0 has been released and is ready to be used for this purpose.
 
 ### Bugs
 
 Report bugs under the [issues](https://github.com/gevhaz/seasonwatch/issues) tab
-here on Github.
+here on GitHub.
 
-### Planned features
+### Release process
 
-- Support checking for when a movie is released
-- Put module package on PyPI
+The release process is automated and happens through the Release workflow. It
+just needs to be triggered by pushing a tag. Instructions for creating a release:
+
+1. Create a pull request toward the `dev` branch with a step-up commit that
+   bumps the version and updates the changelog if necessary. Merge it.
+2. Create a pull request from the `dev` branch toward the `main` branch and
+   merge that.
+3. Create an annotated tag on the `main` branch:
+    `git tag -am "Step up Seasonwatch to version X.Y.Z" vX.Y.Z`.
+4. Push the tag: `git push --tags origin vX.Y.Z`.
+5. Verify that the Release workflow is triggered and succeeds.
