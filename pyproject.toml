@@ -2,6 +2,7 @@
 name = "seasonwatch"
 version = "0.2.0"
 description = "A script to let you know when there are new seasons of your TV shows"
+readme = "README.md"
 authors = ["Simon <gevhaz@tutanota.com>"]
 license = "GPL-3.0"
 
