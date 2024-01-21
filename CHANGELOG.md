@@ -5,7 +5,7 @@
 ### Breaking
 
 - Changed database location from a hardcoded `.seasonwatch/database.sqlite` to
-  `.local/share/seasonwatch/database.sqlite` or whereever your `XDG_DATA_HOME`
+  `.local/share/seasonwatch/database.sqlite` or wherever your `XDG_DATA_HOME`
   points to. Also changed configuration location from
   `.config/seasonwatch/config` to `.config/seasonwatchrc` or wherever your
   `XDG_CONFIG_HOME` points to. This is to align with XDG base directory
@@ -37,5 +37,5 @@
 - Added database and logic to interact with it for storing all data about
   earlier checks etc.
 - Added ability to check for new music.
-- Added ability to configure discogs token, adding new TV shows and new artists
+- Added ability to configure Discogs token, adding new TV shows and new artists
   through the command line with the `configure` verb.

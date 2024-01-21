@@ -1,0 +1,10 @@
+personal_ws-1.1 en 400 utf-8
+Cinemagoer
+Discogs
+IMDb
+Seasonwatch
+TMDB
+XDG
+changelog
+cron
+hardcoded
