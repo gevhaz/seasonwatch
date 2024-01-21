@@ -8,14 +8,14 @@ of TV show you are following are released.
 ## Dependencies
 
 - Python >= 3.10
-- libgirepository ([Arch
+- `libgirepository` ([Arch
   Linux](https://archlinux.org/packages/extra/x86_64/libgirepository/),
   [Ubuntu](https://packages.ubuntu.com/jammy/libgirepository1.0-dev)) (for
   showing notifications)
 
 ## Installation
 
-Download the wheel from the release page here on Github and install it with:
+Download the wheel from the release page here on GitHub and install it with:
 
 ```console
 $ pip install seasonwatch-<the version you want to install>-py3-none-any.whl
@@ -79,7 +79,7 @@ You can use anything you want as the title. The ID is in the URL of the TV
 show on TMDB. In this case, the page on TMDB for the TV show is:
 <https://www.themoviedb.org/tv/63639-the-expanse>
 
-The ID is the number that comes after "tv/" in the URL, and before the title of
+The ID is the number that comes after `tv/` in the URL, and before the title of
 the TV show. That is, "63639".
 
 You can verify that the TV show is added to the database by running:
