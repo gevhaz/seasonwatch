@@ -120,7 +120,7 @@ There is a helper that will suggest corresponding TMDB IDs for your old shows.
 ### Status
 
 Seasonwatch currently supports checking for new TV show seasons only. Version
-0.2.0 has been released and is ready to be used for this purpose.
+0.3.0 has been released and is ready to be used for this purpose.
 
 ### Bugs
 
