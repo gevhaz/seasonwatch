@@ -1,6 +1,24 @@
 # Changelog
 
-## [Unreleased]
+## [0.3.0] - 2024-01-28
+
+### Added
+
+- It is now possible to interactively convert previously added TV shows from the
+  IMDb format to the TMDB format (they have different IDs at each provider).
+- Allow specifying TMDB token.
+
+### Changed
+
+- Use TMDB instead of IMDb as source of latest release data.
+- Use user-specified XDG base directories for configuration and data.
+
+### Fixed
+
+- Create data directory before trying to add a database to it.
+- Specify `requests` as dependency.
+- Removed references to musical releases from CLi since it is no longer
+  supported.
 
 ### Breaking
 
