@@ -5,7 +5,12 @@
 ## Introduction
 
 **Seasonwatch** is an application that helps you keep track of when new seasons
-of TV show you are following are released.
+of your favorite TV shows are released. Streaming services will sometimes try to
+deduce what shows you are interested in and highlight them for you when there is
+a new season, but Seasonwatch will do it completely deterministically – and you
+don't even have to be subscribed to any streaming service. Just let it run
+regularly (e.g. through cron) and you will have complete control of your
+watchlist!
 
 ## Dependencies
 
