@@ -1,5 +1,7 @@
 # Seasonwatch
 
+![banner image of project](./banner.jpg)
+
 ## Introduction
 
 **Seasonwatch** is an application that helps you keep track of when new seasons
