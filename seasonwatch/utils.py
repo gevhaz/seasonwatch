@@ -1,7 +1,8 @@
+import sys
 from datetime import date, datetime
 from typing import Any
 
-from requests import HTTPError, Session
+from requests import HTTPError, RequestException, Session
 
 from seasonwatch.constants import Constants
 from seasonwatch.exceptions import SeasonwatchException
@@ -43,6 +44,9 @@ class Utils:
             raise SeasonwatchException(
                 f"Failed connecting to TMDB for new seasons information: {e}"
             )
+        except RequestException as e:
+            print(f"There was an error fetching {url}: {e}")
+            sys.exit(1)
 
         seasons = response_json["seasons"]
         next_seasons = [s for s in seasons if s["season_number"] == current_season + 1]

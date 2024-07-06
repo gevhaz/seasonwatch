@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Handle all exceptions that can happen when making GET requests, so that the
+  user gets some information about the issue before terminating the application.
+
 ## [0.3.0] - 2024-01-28
 
 ### Added
