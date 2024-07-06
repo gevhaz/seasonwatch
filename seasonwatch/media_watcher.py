@@ -1,7 +1,8 @@
+import sys
 from datetime import datetime, timedelta
 
 from dateutil.parser import parse
-from requests import HTTPError, Session
+from requests import HTTPError, RequestException, Session
 
 from seasonwatch.constants import Constants, Source
 from seasonwatch.exceptions import SeasonwatchException
@@ -37,6 +38,9 @@ class MediaWatcher:
             raise SeasonwatchException(
                 f"Failure connecting to TMDB for converting IMDb ID: {e}"
             )
+        except RequestException as e:
+            print(f"There was an error fetching {url}: {e}")
+            sys.exit(1)
         response = response.json()
         if not isinstance(response, dict):
             raise SeasonwatchException(

@@ -5,7 +5,7 @@ from configparser import ConfigParser
 import gi
 import requests
 from prettytable.prettytable import SINGLE_BORDER
-from requests import Session
+from requests import RequestException, Session
 from requests.exceptions import HTTPError
 
 gi.require_version("Notify", "0.7")
@@ -50,9 +50,10 @@ def main() -> int:
     if args.subparser_name == "configure":
         new_tmdb_token = input("TMDB API Read Access Token: ")
         print("Testing token...")
+        url = f"{Constants.API_BASE_URL}/movie/11"
         try:
             requests.get(
-                f"{Constants.API_BASE_URL}/movie/11",
+                url,
                 headers={
                     "accept": "application/json",
                     "Authorization": f"Bearer {new_tmdb_token}",
@@ -63,6 +64,9 @@ def main() -> int:
                 print("Invalid token. Please correct it.", file=sys.stderr)
             else:
                 print(f"Error testing token: '{e}'", file=sys.stderr)
+            sys.exit(1)
+        except RequestException as e:
+            print(f"There was an error fetching {url}: {e}")
             sys.exit(1)
         print("Token is valid!")
         config.set(section="Tokens", option="tmdb_token", value=new_tmdb_token)

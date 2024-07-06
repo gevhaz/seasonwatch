@@ -323,9 +323,9 @@ class Sql:
                     "last_check": check,
                     "last_notified": notified,
                     "last_changed": change,
-                    "id_source": Source.IMDB
-                    if id_source == Source.IMDB.value
-                    else Source.TMDB,
+                    "id_source": (
+                        Source.IMDB if id_source == Source.IMDB.value else Source.TMDB
+                    ),
                 }
             )
         connection.close()
