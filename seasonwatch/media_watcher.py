@@ -118,6 +118,8 @@ class MediaWatcher:
                     "date is unknown"
                 )
                 self.series["nothing"][name] = message
+                continue
+
             if not isinstance(next_air_date_raw, str):
                 raise SeasonwatchException(
                     f"Malformed air date returned from TMDB: {next_air_date_raw}"
