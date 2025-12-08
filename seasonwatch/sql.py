@@ -359,7 +359,7 @@ class Sql:
                 {SERIES_TABLE};
             """
         )
-        table = from_db_cursor(cursor)  # type: ignore
+        table = from_db_cursor(cursor)
         if table is None:
             raise SeasonwatchException("Couldn't create table from database cursor")
 
