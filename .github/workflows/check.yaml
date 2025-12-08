@@ -28,7 +28,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt install libgirepository1.0-dev libcairo2-dev pkg-config
+          sudo apt install libgirepository-2.0-dev libcairo2-dev pkg-config
           poetry env use $(which python3.10)
           poetry install
 
