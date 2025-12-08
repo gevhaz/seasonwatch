@@ -19,6 +19,9 @@ watchlist!
   Linux](https://archlinux.org/packages/extra/x86_64/libgirepository/),
   [Ubuntu](https://packages.ubuntu.com/jammy/libgirepository1.0-dev)) (for
   showing notifications)
+- `pkg-config` ([Arch
+  Linux](https://archlinux.org/packages/core/x86_64/pkgconf/))
+- The Cairo library.
 
 ## Installation
 
@@ -139,11 +142,9 @@ here on GitHub.
 The release process is automated and happens through the Release workflow. It
 just needs to be triggered by pushing a tag. Instructions for creating a release:
 
-1. Create a pull request toward the `dev` branch with a step-up commit that
+1. Create a pull request toward the `main` branch with a step-up commit that
    bumps the version and updates the changelog if necessary. Merge it.
-2. Create a pull request from the `dev` branch toward the `main` branch and
-   merge that.
-3. Create an annotated tag on the `main` branch:
+2. Create an annotated tag on the `main` branch:
     `git tag -am "Step up Seasonwatch to version X.Y.Z" vX.Y.Z`.
-4. Push the tag: `git push --tags origin vX.Y.Z`.
-5. Verify that the Release workflow is triggered and succeeds.
+3. Push the tag: `git push --tags origin vX.Y.Z`.
+4. Verify that the Release workflow is triggered and succeeds.
