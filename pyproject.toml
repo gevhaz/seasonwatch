@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "seasonwatch"
-version = "0.3.0"
+version = "0.3.1"
 description = "A script to let you know when there are new seasons of your TV shows"
 readme = "README.md"
 authors = ["Simon <gevhaz@tutanota.com>"]

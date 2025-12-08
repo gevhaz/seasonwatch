@@ -2,10 +2,13 @@
 
 ## Unreleased
 
+## [0.3.1] - 2025-12-08
+
 ### Fixed
 
 - Handle all exceptions that can happen when making GET requests, so that the
   user gets some information about the issue before terminating the application.
+- Fix crash when air date not available.
 
 ## [0.3.0] - 2024-01-28
 
