@@ -138,13 +138,3 @@ class MediaWatcher:
                     "than three months"
                 )
                 self.series["later"][name] = message
-
-            Sql.update_series(
-                id,
-                name,
-                last_watched_season,
-                checks,
-                last_change,
-                last_notify,
-                source,
-            )
