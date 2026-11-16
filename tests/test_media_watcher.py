@@ -5,7 +5,7 @@ import pytest
 from requests import Session
 
 from seasonwatch import media_watcher
-from seasonwatch.exceptions import SeasonwatchException
+from seasonwatch.exceptions import SeasonwatchException, TmdbResponseError
 from seasonwatch.season_status import CheckFailed, Released, SeasonCheck
 from seasonwatch.series import Series
 from seasonwatch.sql import add_series, migrate_schema
@@ -21,7 +21,7 @@ def fetch_season_without_network(
     season_number: int,
 ) -> Season | None:
     if series_id == ID_THAT_TMDB_DOES_NOT_HAVE:
-        raise SeasonwatchException("404 Client Error")
+        raise TmdbResponseError("404 Client Error")
     return Season(number=season_number, air_date=date(2023, 6, 1))
 
 
@@ -62,3 +62,30 @@ def test_failed_check_does_not_stop_the_other_series_from_being_checked(
             status=Released(air_date=date(2023, 6, 1)),
         ),
     ]
+
+
+def fetch_season_when_tmdb_is_unreachable(
+    session: Session,
+    series_id: int,
+    season_number: int,
+) -> Season | None:
+    raise SeasonwatchException("Connection refused")
+
+
+def test_check_is_aborted_when_tmdb_cannot_be_reached(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        media_watcher,
+        "fetch_season",
+        fetch_season_when_tmdb_is_unreachable,
+    )
+    connection = apsw.Connection(":memory:")
+    migrate_schema(connection)
+    add_series(
+        connection,
+        Series(tmdb_id=63639, title="The Expanse", last_watched_season=3),
+    )
+
+    with pytest.raises(SeasonwatchException, match="Connection refused"):
+        media_watcher.check_for_new_seasons(connection, Session(), today=TODAY)
