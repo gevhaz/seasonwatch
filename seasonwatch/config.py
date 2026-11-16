@@ -1,5 +1,5 @@
-from seasonwatch.constants import Source
 from seasonwatch.exceptions import SeasonwatchException
+from seasonwatch.series import Series
 from seasonwatch.sql import Sql
 
 
@@ -9,89 +9,78 @@ class Configure:
     @staticmethod
     def step_up_series() -> None:
         """Increase 'current season' of a TV show by 1."""
-        shows = Sql.read_all_series()
-        menu_data: list[dict[str, str]] = []
-        for i, show in enumerate(shows):
-            menu_data.append(
-                {
-                    "index": str(i),
-                    "id": show["id"],
-                    "title": show["title"],
-                }
-            )
-        for item in menu_data:
-            print(f"[{item['index']}] {item['title']}")
+        all_series = Sql.read_all_series()
+        for index, series in enumerate(all_series):
+            print(f"[{index}] {series.title}")
         selection: list[str] = input(
             "Select the shows you want to step up the current season of, separated by "
             "commas: "
         ).split(",")
 
-        shows_to_step_up = [s["id"] for s in menu_data if s["index"] in selection]
-
-        for show_id in shows_to_step_up:
-            title = Sql.read_series(show_id).get("title")
-            Sql.step_up_series(show_id)
-            print(f"Successfully stepped up '{title}'.")
+        for index, series in enumerate(all_series):
+            if str(index) not in selection:
+                continue
+            Sql.step_up_series(series.tmdb_id)
+            print(f"Successfully stepped up '{series.title}'.")
 
     @staticmethod
     def remove_series() -> None:
         """Remove a TV show."""
-        shows = Sql.read_all_series()
-        menu_data: list[dict[str, str]] = []
-        for i, show in enumerate(shows):
-            menu_data.append(
-                {
-                    "index": str(i),
-                    "id": show["id"],
-                    "title": show["title"],
-                }
-            )
-        for item in menu_data:
-            print(f"[{item['index']}] {item['title']}")
+        all_series = Sql.read_all_series()
+        for index, series in enumerate(all_series):
+            print(f"[{index}] {series.title}")
         selection: list[str] = input(
             "Select the shows you want to remove, separated by commas: "
         ).split(",")
 
-        shows_to_remove = [s["id"] for s in menu_data if s["index"] in selection]
-
-        for show_id in shows_to_remove:
-            title = Sql.read_series(show_id).get("title")
-            Sql.remove_series(show_id)
-            print(f"Successfully deleted '{title}'.")
+        for index, series in enumerate(all_series):
+            if str(index) not in selection:
+                continue
+            Sql.remove_series(series.tmdb_id)
+            print(f"Successfully deleted '{series.title}'.")
 
     @staticmethod
     def add_series() -> None:
         """Interactively add one or more TV-shows to the database.
 
-        Add one or more TV-shows to the database. Requests user from
-        the input and the updates the database, with default values for
-        that which the user doesn't provide.
+        Asks the user for the title, the TMDB ID and the last watched
+        season of each show, and for confirmation before storing it.
+
+        :raises SeasonwatchException: If the ID or the season that the
+            user enters isn't a number.
         """
         add_more = True
         while add_more:
             title = input("What the show should be called: ")
-            id = input("ID of the show (after 'tv/' in the URL on TMDB): ")
-            last_season = input("Last watched season: ")
+            tmdb_id_text = input("ID of the show (after 'tv/' in the URL on TMDB): ")
+            last_season_text = input("Last watched season: ")
 
             try:
-                last_season_int = int(last_season)
+                tmdb_id = int(tmdb_id_text)
             except ValueError:
-                raise SeasonwatchException(f"Couldn't parse '{last_season}' as an int")
+                raise SeasonwatchException(
+                    f"Couldn't parse '{tmdb_id_text}' as a TMDB ID. It is the "
+                    "number after 'tv/' in the URL, without the name after it."
+                )
+            try:
+                last_watched_season = int(last_season_text)
+            except ValueError:
+                raise SeasonwatchException(
+                    f"Couldn't parse '{last_season_text}' as an int"
+                )
 
             print(f"title: {title}")
-            print(f"TMDB ID: {id}")
-            print(f"Last watched season: {last_season}")
+            print(f"TMDB ID: {tmdb_id}")
+            print(f"Last watched season: {last_watched_season}")
             ok = False if input("Does this look ok? (Y/n) ") == "n" else True
 
             if ok:
-                Sql.update_series(
-                    id,
-                    title,
-                    last_season_int,
-                    0,
-                    "1970-01-01 00:00:00",
-                    "1970-01-01 00:00:00",
-                    Source.TMDB,
+                Sql.add_series(
+                    Series(
+                        tmdb_id=tmdb_id,
+                        title=title,
+                        last_watched_season=last_watched_season,
+                    )
                 )
             else:
                 print("Data was not saved")

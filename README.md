@@ -121,9 +121,11 @@ will show you desktop notifications.
 ## Migration to TMDB
 
 The IMDb API is no longer working, so from version 0.3.0 onward, TMDB is used
-instead. If your database was created before then, you will be asked to migrate
-when running Seasonwatch for the first time after installing the new version.
-There is a helper that will suggest corresponding TMDB IDs for your old shows.
+instead. If your database was created before then, your TV shows have IMDb IDs
+that need to be converted to TMDB IDs. Only the 0.3 versions can do that, so
+install version 0.3.2 and run it once. It will suggest corresponding TMDB IDs
+for your old shows. After that you can upgrade to the latest version, which
+refuses to start for as long as the database has shows with IMDb IDs.
 
 ## Development
 

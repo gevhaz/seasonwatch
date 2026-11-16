@@ -79,7 +79,7 @@ def find_season(series_data: Any, season_number: int) -> Season | None:
 
 def fetch_season(
     session: Session,
-    series_id: str,
+    series_id: int,
     season_number: int,
 ) -> Season | None:
     """Return one season of a series, or None if TMDB doesn't list it.

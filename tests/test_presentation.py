@@ -3,7 +3,11 @@ from typing import get_args
 
 import pytest
 
-from seasonwatch.presentation import PRESENTATION_BY_STATUS, describe_season_check
+from seasonwatch.presentation import (
+    PRESENTATION_BY_STATUS,
+    describe_season_check,
+    format_series_table,
+)
 from seasonwatch.season_status import (
     CheckFailed,
     ComingLater,
@@ -14,6 +18,7 @@ from seasonwatch.season_status import (
     SeasonStatus,
     Unscheduled,
 )
+from seasonwatch.series import Series
 
 
 def test_every_status_has_a_presentation() -> None:
@@ -63,3 +68,13 @@ def test_describe_season_check(
     )
 
     assert describe_season_check(season_check) == expected_description
+
+
+def test_format_series_table_links_to_tmdb() -> None:
+    series = Series(tmdb_id=63639, title="The Expanse", last_watched_season=3)
+
+    table = format_series_table([series])
+
+    row_of_the_series = table.splitlines()[3]
+    cells = [cell.strip() for cell in row_of_the_series.strip("│").split("│")]
+    assert cells == ["The Expanse", "3", "https://www.themoviedb.org/tv/63639"]
