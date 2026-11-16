@@ -213,8 +213,9 @@ class Sql:
         cursor.execute(
             f"""
             DELETE FROM {SERIES_TABLE}
-            WHERE id = {id};
-            """
+            WHERE id = ?;
+            """,
+            (id,),
         )
         cursor.execute("COMMIT TRANSACTION")
         connection.close()
@@ -261,15 +262,9 @@ class Sql:
                 last_notified_date,
                 last_change_date
             )
-            VALUES(
-                {id},
-                '{title}',
-                {last},
-                {checks},
-                '{last_notify}',
-                '{last_change}'
-            );
-            """
+            VALUES(?, ?, ?, ?, ?, ?);
+            """,
+            (id, title, last, checks, last_notify, last_change),
         )
         cursor.execute("COMMIT TRANSACTION")
         connection.close()
@@ -285,13 +280,15 @@ class Sql:
         cursor = connection.cursor()
 
         cursor.execute("BEGIN TRANSACTION")
-        transaction = f"""
+        cursor.execute(
+            f"""
             UPDATE {SERIES_TABLE}
             SET last_watched_season = last_watched_season + 1,
-                last_change_date = '{Utils.sql_today()}'
-            WHERE id = {id};
-            """
-        cursor.execute(transaction)
+                last_change_date = ?
+            WHERE id = ?;
+            """,
+            (Utils.sql_today(), id),
+        )
         cursor.execute("COMMIT TRANSACTION")
         connection.close()
 
@@ -313,8 +310,9 @@ class Sql:
             FROM
                 {SERIES_TABLE}
             WHERE
-                id = {id};
-            """
+                id = ?;
+            """,
+            (id,),
         ):
             # Safe to assume only one show with a specific ID
             values = {

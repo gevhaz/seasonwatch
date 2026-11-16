@@ -11,6 +11,8 @@
 
 ### Fixed
 
+- Adding a TV show with an apostrophe in its title, e.g. "Grey's Anatomy", no
+  longer crashes.
 - A TV show that can't be looked up on TMDB, e.g. because the wrong ID was
   entered when adding it, no longer stops the other shows from being checked.
   The failure is reported for that show only, and Seasonwatch exits with
