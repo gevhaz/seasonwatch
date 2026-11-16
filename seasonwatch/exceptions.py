@@ -11,3 +11,11 @@ class ConfigException(SeasonwatchException):
     """
     Raised when the configuration cannot be parsed
     """
+
+
+class TmdbResponseError(SeasonwatchException):
+    """
+    Raised when TMDB answers a request with an error or with data that
+    can't be parsed. It concerns that request only, unlike a failure to
+    reach TMDB at all.
+    """

@@ -1,6 +1,5 @@
 """Access to the parts of the TMDB API that Seasonwatch needs."""
 
-import sys
 from dataclasses import dataclass
 from datetime import date
 from typing import Any
@@ -8,7 +7,7 @@ from typing import Any
 from requests import HTTPError, RequestException, Session
 
 from seasonwatch.constants import Constants
-from seasonwatch.exceptions import SeasonwatchException
+from seasonwatch.exceptions import SeasonwatchException, TmdbResponseError
 
 
 @dataclass(frozen=True)
@@ -26,15 +25,15 @@ def parse_season(season_data: Any) -> Season:
     A missing or empty air date means that TMDB doesn't know it yet, and
     gives a season without an air date.
 
-    :raises SeasonwatchException: If the entry has no season number, or
+    :raises TmdbResponseError: If the entry has no season number, or
         an air date that isn't written as YYYY-MM-DD.
     """
     if not isinstance(season_data, dict):
-        raise SeasonwatchException(f"Can't parse season from TMDB: {season_data}")
+        raise TmdbResponseError(f"Can't parse season from TMDB: {season_data}")
 
     season_number = season_data.get("season_number")
     if not isinstance(season_number, int):
-        raise SeasonwatchException(
+        raise TmdbResponseError(
             f"Malformed season number returned from TMDB: {season_number}"
         )
 
@@ -42,13 +41,13 @@ def parse_season(season_data: Any) -> Season:
     if air_date_text is None or air_date_text == "":
         return Season(number=season_number, air_date=None)
     if not isinstance(air_date_text, str):
-        raise SeasonwatchException(
+        raise TmdbResponseError(
             f"Malformed air date returned from TMDB: {air_date_text}"
         )
     try:
         air_date = date.fromisoformat(air_date_text)
     except ValueError:
-        raise SeasonwatchException(
+        raise TmdbResponseError(
             f"Malformed air date returned from TMDB: {air_date_text}"
         )
     return Season(number=season_number, air_date=air_date)
@@ -59,15 +58,15 @@ def find_season(series_data: Any, season_number: int) -> Season | None:
 
     Returns None if the series has no season with that number.
 
-    :raises SeasonwatchException: If the details don't have the expected
+    :raises TmdbResponseError: If the details don't have the expected
         structure. Only the requested season is parsed, so malformed
         data for other seasons is not an error.
     """
     if not isinstance(series_data, dict):
-        raise SeasonwatchException(f"Can't parse series from TMDB: {series_data}")
+        raise TmdbResponseError(f"Can't parse series from TMDB: {series_data}")
     all_seasons_data = series_data.get("seasons")
     if not isinstance(all_seasons_data, list):
-        raise SeasonwatchException("No list of seasons in series data from TMDB.")
+        raise TmdbResponseError("No list of seasons in series data from TMDB.")
 
     for season_data in all_seasons_data:
         if not isinstance(season_data, dict):
@@ -84,10 +83,9 @@ def fetch_season(
 ) -> Season | None:
     """Return one season of a series, or None if TMDB doesn't list it.
 
-    Exits the application if TMDB can't be reached.
-
-    :raises SeasonwatchException: If TMDB responds with an error or with
+    :raises TmdbResponseError: If TMDB responds with an error or with
         data that can't be parsed.
+    :raises SeasonwatchException: If TMDB can't be reached.
     """
     url = f"{Constants.API_BASE_URL}/tv/{series_id}"
     try:
@@ -95,11 +93,40 @@ def fetch_season(
         response.raise_for_status()
         series_data = response.json()
     except HTTPError as e:
-        raise SeasonwatchException(
+        raise TmdbResponseError(
             f"Failed connecting to TMDB for new seasons information: {e}"
         )
     except RequestException as e:
-        print(f"There was an error fetching {url}: {e}")
-        sys.exit(1)
+        raise SeasonwatchException(f"There was an error fetching {url}: {e}")
 
     return find_season(series_data, season_number)
+
+
+def create_session(tmdb_token: str) -> Session:
+    """Return a session that authenticates its requests with the token."""
+    session = Session()
+    session.headers.update(
+        {
+            "accept": "application/json",
+            "Authorization": f"Bearer {tmdb_token}",
+        }
+    )
+    return session
+
+
+def check_token(tmdb_token: str) -> None:
+    """Make a request to TMDB to find out if it accepts the token.
+
+    :raises SeasonwatchException: If TMDB rejects the token, or if the
+        request fails for another reason.
+    """
+    # Any resource that needs authentication will do, this is a movie.
+    url = f"{Constants.API_BASE_URL}/movie/11"
+    try:
+        create_session(tmdb_token).get(url).raise_for_status()
+    except HTTPError as e:
+        if e.response is not None and e.response.status_code == 401:
+            raise SeasonwatchException("Invalid token. Please correct it.")
+        raise SeasonwatchException(f"Error testing token: '{e}'")
+    except RequestException as e:
+        raise SeasonwatchException(f"There was an error fetching {url}: {e}")

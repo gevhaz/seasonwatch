@@ -14,9 +14,13 @@
 - The database is converted to a new layout the first time this version runs.
   Your TV shows are kept, and a backup is made first as usual, but earlier
   versions of Seasonwatch can't use the converted database.
+- Asking for help or setting the token no longer makes a backup of the
+  database.
 
 ### Fixed
 
+- Entering an ID or a season that isn't a number when adding a TV show gives
+  an error message instead of a crash.
 - Adding a TV show with an apostrophe in its title, e.g. "Grey's Anatomy", no
   longer crashes.
 - A TV show that can't be looked up on TMDB, e.g. because the wrong ID was
