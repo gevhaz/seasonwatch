@@ -1,5 +1,6 @@
 import os
 import shutil
+from datetime import datetime
 from pathlib import Path
 from typing import Callable, Final
 
@@ -7,7 +8,6 @@ import apsw
 
 from seasonwatch.exceptions import SeasonwatchException
 from seasonwatch.series import Series
-from seasonwatch.utils import Utils
 
 DATA_DIRECTORY: Final[Path] = Path(
     os.environ.get(
@@ -205,106 +205,103 @@ def migrate_schema(connection: apsw.Connection) -> None:
             connection.cursor().execute(f"PRAGMA user_version = {schema_version}")
 
 
-class Sql:
-    @staticmethod
-    def ensure_table() -> None:
-        """Create or update the tables in the Seasonwatch database.
+def ensure_table() -> None:
+    """Create or update the tables in the Seasonwatch database.
 
-        Also creates the directory for the database if it is missing.
-        """
-        if not DATA_DIRECTORY.exists():
-            DATA_DIRECTORY.mkdir(parents=True, exist_ok=True)
+    Also creates the directory for the database if it is missing.
+    """
+    if not DATA_DIRECTORY.exists():
+        DATA_DIRECTORY.mkdir(parents=True, exist_ok=True)
 
-        connection = apsw.Connection(DATABASE_PATH)
-        migrate_schema(connection)
-        connection.close()
+    connection = apsw.Connection(DATABASE_PATH)
+    migrate_schema(connection)
+    connection.close()
 
-    @staticmethod
-    def backup_database() -> None:
-        """Backup a dated Seasonwatch database.
 
-        Create a backup of the Seasonwatch database and remove the
-        oldest backup if there are more than ``N_BACKUPS`` of them.
-        """
-        if not DATA_DIRECTORY.exists():
-            # Nothing to backup if data directory doesn't exist
-            return
-        if Path(DATABASE_PATH).exists():
-            backup_path = Path(
-                DATA_DIRECTORY / str(Utils.timestamp() + "_database.sqlite")
-            )
-            shutil.copyfile(DATABASE_PATH, backup_path)
+def backup_database() -> None:
+    """Backup a dated Seasonwatch database.
 
-        dir_content = os.listdir(DATA_DIRECTORY)
-        dir_content.remove(DATABASE_FILE)
-        dir_content.sort(reverse=True)
-        files_to_remove = set(dir_content).difference(set(dir_content[0:N_BACKUPS]))
-        for file in files_to_remove:
-            if "database" in file:
-                os.remove(DATA_DIRECTORY / file)
+    Create a backup of the Seasonwatch database and remove the
+    oldest backup if there are more than ``N_BACKUPS`` of them.
+    """
+    if not DATA_DIRECTORY.exists():
+        # Nothing to backup if data directory doesn't exist
+        return
+    if Path(DATABASE_PATH).exists():
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        backup_path = DATA_DIRECTORY / f"{timestamp}_database.sqlite"
+        shutil.copyfile(DATABASE_PATH, backup_path)
 
-    @staticmethod
-    def add_series(series: Series) -> None:
-        """Store a series, replacing any stored series with its ID or title."""
-        connection = apsw.Connection(DATABASE_PATH)
-        with connection:
-            connection.cursor().execute(
-                f"""
-                INSERT OR REPLACE INTO {SERIES_TABLE} (
-                    tmdb_id,
-                    title,
-                    last_watched_season
-                )
-                VALUES(?, ?, ?);
-                """,
-                (series.tmdb_id, series.title, series.last_watched_season),
-            )
-        connection.close()
+    dir_content = os.listdir(DATA_DIRECTORY)
+    dir_content.remove(DATABASE_FILE)
+    dir_content.sort(reverse=True)
+    files_to_remove = set(dir_content).difference(set(dir_content[0:N_BACKUPS]))
+    for file in files_to_remove:
+        if "database" in file:
+            os.remove(DATA_DIRECTORY / file)
 
-    @staticmethod
-    def remove_series(tmdb_id: int) -> None:
-        """Remove the series with the given ID, if there is one."""
-        connection = apsw.Connection(DATABASE_PATH)
-        with connection:
-            connection.cursor().execute(
-                f"DELETE FROM {SERIES_TABLE} WHERE tmdb_id = ?;",
-                (tmdb_id,),
-            )
-        connection.close()
 
-    @staticmethod
-    def step_up_series(tmdb_id: int) -> None:
-        """Increase the last watched season of the series with the ID by one."""
-        connection = apsw.Connection(DATABASE_PATH)
-        with connection:
-            connection.cursor().execute(
-                f"""
-                UPDATE {SERIES_TABLE}
-                SET last_watched_season = last_watched_season + 1
-                WHERE tmdb_id = ?;
-                """,
-                (tmdb_id,),
-            )
-        connection.close()
-
-    @staticmethod
-    def read_all_series() -> list[Series]:
-        """Return all stored series, in the order that they were added."""
-        connection = apsw.Connection(DATABASE_PATH)
-        all_series = []
-        for tmdb_id, title, last_watched_season in connection.cursor().execute(
+def add_series(series: Series) -> None:
+    """Store a series, replacing any stored series with its ID or title."""
+    connection = apsw.Connection(DATABASE_PATH)
+    with connection:
+        connection.cursor().execute(
             f"""
-            SELECT tmdb_id, title, last_watched_season
-            FROM {SERIES_TABLE}
-            ORDER BY rowid;
-            """
-        ):
-            all_series.append(
-                Series(
-                    tmdb_id=tmdb_id,
-                    title=title,
-                    last_watched_season=last_watched_season,
-                )
+            INSERT OR REPLACE INTO {SERIES_TABLE} (
+                tmdb_id,
+                title,
+                last_watched_season
             )
-        connection.close()
-        return all_series
+            VALUES(?, ?, ?);
+            """,
+            (series.tmdb_id, series.title, series.last_watched_season),
+        )
+    connection.close()
+
+
+def remove_series(tmdb_id: int) -> None:
+    """Remove the series with the given ID, if there is one."""
+    connection = apsw.Connection(DATABASE_PATH)
+    with connection:
+        connection.cursor().execute(
+            f"DELETE FROM {SERIES_TABLE} WHERE tmdb_id = ?;",
+            (tmdb_id,),
+        )
+    connection.close()
+
+
+def step_up_series(tmdb_id: int) -> None:
+    """Increase the last watched season of the series with the ID by one."""
+    connection = apsw.Connection(DATABASE_PATH)
+    with connection:
+        connection.cursor().execute(
+            f"""
+            UPDATE {SERIES_TABLE}
+            SET last_watched_season = last_watched_season + 1
+            WHERE tmdb_id = ?;
+            """,
+            (tmdb_id,),
+        )
+    connection.close()
+
+
+def read_all_series() -> list[Series]:
+    """Return all stored series, in the order that they were added."""
+    connection = apsw.Connection(DATABASE_PATH)
+    all_series = []
+    for tmdb_id, title, last_watched_season in connection.cursor().execute(
+        f"""
+        SELECT tmdb_id, title, last_watched_season
+        FROM {SERIES_TABLE}
+        ORDER BY rowid;
+        """
+    ):
+        all_series.append(
+            Series(
+                tmdb_id=tmdb_id,
+                title=title,
+                last_watched_season=last_watched_season,
+            )
+        )
+    connection.close()
+    return all_series

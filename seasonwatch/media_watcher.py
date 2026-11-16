@@ -4,6 +4,7 @@ from datetime import date
 
 from requests import Session
 
+from seasonwatch import sql
 from seasonwatch.exceptions import SeasonwatchException
 from seasonwatch.season_status import (
     CheckFailed,
@@ -11,7 +12,6 @@ from seasonwatch.season_status import (
     SeasonStatus,
     classify_season,
 )
-from seasonwatch.sql import Sql
 from seasonwatch.tmdb import fetch_season
 
 
@@ -26,7 +26,7 @@ def check_for_new_seasons(session: Session, today: date) -> list[SeasonCheck]:
     checked.
     """
     season_checks: list[SeasonCheck] = []
-    for series in Sql.read_all_series():
+    for series in sql.read_all_series():
         next_season_number = series.last_watched_season + 1
         status: SeasonStatus
         try:
