@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Fixed
+
+- A TV show that can't be looked up on TMDB, e.g. because the wrong ID was
+  entered when adding it, no longer stops the other shows from being checked.
+  The failure is reported for that show only, and Seasonwatch exits with
+  status 1.
+
 ## [0.3.2] - 2025-12-09
 
 No changes.
