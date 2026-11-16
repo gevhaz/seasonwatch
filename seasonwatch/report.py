@@ -1,5 +1,7 @@
 """Telling the user what checking for new seasons resulted in."""
 
+import sys
+
 import gi
 
 gi.require_version("Notify", "0.7")
@@ -25,7 +27,8 @@ def report_season_checks(season_checks: list[SeasonCheck]) -> None:
                 continue
 
             message = describe_season_check(season_check)
-            print(presentation.terminal_color + message)
+            output_stream = sys.stderr if presentation.is_error else sys.stdout
+            print(presentation.terminal_color + message, file=output_stream)
 
             if not presentation.shows_notification:
                 continue

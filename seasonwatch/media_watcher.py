@@ -7,7 +7,12 @@ from requests import HTTPError, RequestException, Session
 
 from seasonwatch.constants import Constants, Source
 from seasonwatch.exceptions import SeasonwatchException
-from seasonwatch.season_status import SeasonCheck, classify_season
+from seasonwatch.season_status import (
+    CheckFailed,
+    SeasonCheck,
+    SeasonStatus,
+    classify_season,
+)
 from seasonwatch.sql import Sql
 from seasonwatch.tmdb import fetch_season
 from seasonwatch.utils import Utils
@@ -93,8 +98,12 @@ def check_for_new_seasons(session: Session, today: date) -> list[SeasonCheck]:
     Series that still have an IMDb ID are converted first, and left out
     if the user skips converting them.
 
-    :raises SeasonwatchException: If the data about a series can't be
-        fetched from TMDB.
+    A series that can't be looked up on TMDB gets the status
+    ``CheckFailed`` and doesn't stop the remaining series from being
+    checked.
+
+    :raises SeasonwatchException: If TMDB responds with an error when
+        converting an IMDb ID.
     """
     convert_imdb_series(session)
 
@@ -104,12 +113,18 @@ def check_for_new_seasons(session: Session, today: date) -> list[SeasonCheck]:
             # Only IDs from TMDB can be looked up there.
             continue
         next_season_number = int(series["last_season"]) + 1
-        next_season = fetch_season(session, series["id"], next_season_number)
+        status: SeasonStatus
+        try:
+            next_season = fetch_season(session, series["id"], next_season_number)
+        except SeasonwatchException as error:
+            status = CheckFailed(reason=str(error))
+        else:
+            status = classify_season(next_season, today)
         season_checks.append(
             SeasonCheck(
                 series_title=series["title"],
                 season_number=next_season_number,
-                status=classify_season(next_season, today),
+                status=status,
             )
         )
     return season_checks

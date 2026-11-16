@@ -15,6 +15,7 @@ from seasonwatch.constants import Constants
 from seasonwatch.exceptions import SeasonwatchException
 from seasonwatch.media_watcher import check_for_new_seasons
 from seasonwatch.report import report_season_checks
+from seasonwatch.season_status import CheckFailed
 from seasonwatch.sql import Sql
 
 init(autoreset=True)
@@ -111,6 +112,9 @@ def main() -> int:
 
     report_season_checks(season_checks)
 
+    for season_check in season_checks:
+        if isinstance(season_check.status, CheckFailed):
+            return 1
     return 0
 
 

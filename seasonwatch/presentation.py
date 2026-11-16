@@ -10,6 +10,7 @@ from typing import Final
 from colorama import Fore
 
 from seasonwatch.season_status import (
+    CheckFailed,
     ComingLater,
     ComingSoon,
     NotAnnounced,
@@ -29,6 +30,8 @@ class Presentation:
     shows_notification: bool
     # None leaves the timeout up to the notification server.
     notification_timeout_in_milliseconds: int | None = None
+    # Errors are printed to standard error instead of standard output.
+    is_error: bool = False
 
 
 # The statuses are listed in the terminal in the order they have here.
@@ -42,6 +45,11 @@ PRESENTATION_BY_STATUS: Final[dict[type, Presentation]] = {
     ComingLater: Presentation(terminal_color="", shows_notification=False),
     Unscheduled: Presentation(terminal_color="", shows_notification=False),
     NotAnnounced: Presentation(terminal_color="", shows_notification=False),
+    CheckFailed: Presentation(
+        terminal_color=Fore.RED,
+        shows_notification=False,
+        is_error=True,
+    ),
 }
 
 
@@ -74,4 +82,9 @@ def describe_season_check(season_check: SeasonCheck) -> str:
         )
     if isinstance(status, NotAnnounced):
         return f"No season {season_number} found for {series_title}"
+    if isinstance(status, CheckFailed):
+        return (
+            f"Couldn't check for season {season_number} of {series_title}: "
+            f"{status.reason}"
+        )
     assert_never(status)

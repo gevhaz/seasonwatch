@@ -5,6 +5,7 @@ import pytest
 
 from seasonwatch.presentation import PRESENTATION_BY_STATUS, describe_season_check
 from seasonwatch.season_status import (
+    CheckFailed,
     ComingLater,
     ComingSoon,
     NotAnnounced,
@@ -44,6 +45,10 @@ def test_every_status_has_a_presentation() -> None:
         (
             NotAnnounced(),
             "No season 4 found for The Expanse",
+        ),
+        (
+            CheckFailed(reason="404 Client Error"),
+            "Couldn't check for season 4 of The Expanse: 404 Client Error",
         ),
     ],
 )

@@ -41,7 +41,21 @@ class NotAnnounced:
     """TMDB doesn't list the season."""
 
 
-SeasonStatus = Union[Released, ComingSoon, ComingLater, Unscheduled, NotAnnounced]
+@dataclass(frozen=True)
+class CheckFailed:
+    """The season couldn't be looked up on TMDB."""
+
+    reason: str
+
+
+SeasonStatus = Union[
+    Released,
+    ComingSoon,
+    ComingLater,
+    Unscheduled,
+    NotAnnounced,
+    CheckFailed,
+]
 
 
 @dataclass(frozen=True)
