@@ -1,88 +1,45 @@
-"""Interactive commands for changing which shows are checked."""
+"""Reading and writing the configuration file."""
 
-import apsw
+from configparser import ConfigParser
 
-from seasonwatch import sql
-from seasonwatch.exceptions import SeasonwatchException
-from seasonwatch.series import Series
+from seasonwatch.constants import Constants
 
-
-def step_up_series(connection: apsw.Connection) -> None:
-    """Increase 'current season' of a TV show by 1."""
-    all_series = sql.read_all_series(connection)
-    for index, series in enumerate(all_series):
-        print(f"[{index}] {series.title}")
-    selection: list[str] = input(
-        "Select the shows you want to step up the current season of, separated by "
-        "commas: "
-    ).split(",")
-
-    for index, series in enumerate(all_series):
-        if str(index) not in selection:
-            continue
-        sql.step_up_series(connection, series.tmdb_id)
-        print(f"Successfully stepped up '{series.title}'.")
+TOKENS_SECTION = "Tokens"
+TMDB_TOKEN_OPTION = "tmdb_token"
 
 
-def remove_series(connection: apsw.Connection) -> None:
-    """Remove a TV show."""
-    all_series = sql.read_all_series(connection)
-    for index, series in enumerate(all_series):
-        print(f"[{index}] {series.title}")
-    selection: list[str] = input(
-        "Select the shows you want to remove, separated by commas: "
-    ).split(",")
+def load_configuration() -> ConfigParser:
+    """Return the configuration of the user.
 
-    for index, series in enumerate(all_series):
-        if str(index) not in selection:
-            continue
-        sql.remove_series(connection, series.tmdb_id)
-        print(f"Successfully deleted '{series.title}'.")
-
-
-def add_series(connection: apsw.Connection) -> None:
-    """Interactively add one or more TV-shows to the database.
-
-    Asks the user for the title, the TMDB ID and the last watched
-    season of each show, and for confirmation before storing it.
-
-    :raises SeasonwatchException: If the ID or the season that the
-        user enters isn't a number.
+    Creates the configuration file if it is missing, and adds an empty
+    section for tokens to it if it has none, so that the user has a
+    place to fill in a token by hand.
     """
-    add_more = True
-    while add_more:
-        title = input("What the show should be called: ")
-        tmdb_id_text = input("ID of the show (after 'tv/' in the URL on TMDB): ")
-        last_season_text = input("Last watched season: ")
+    if not Constants.CONFIG_DIRECTORY.exists():
+        Constants.CONFIG_DIRECTORY.mkdir(parents=True, exist_ok=True)
+    if not Constants.CONFIG_PATH.exists():
+        Constants.CONFIG_PATH.touch()
 
-        try:
-            tmdb_id = int(tmdb_id_text)
-        except ValueError:
-            raise SeasonwatchException(
-                f"Couldn't parse '{tmdb_id_text}' as a TMDB ID. It is the "
-                "number after 'tv/' in the URL, without the name after it."
-            )
-        try:
-            last_watched_season = int(last_season_text)
-        except ValueError:
-            raise SeasonwatchException(f"Couldn't parse '{last_season_text}' as an int")
+    configuration = ConfigParser()
+    configuration.read(Constants.CONFIG_PATH)
+    if not configuration.has_section(TOKENS_SECTION):
+        configuration.add_section(TOKENS_SECTION)
+        # Appending should preserve comments that the user has written.
+        with open(Constants.CONFIG_PATH, mode="a") as config_file:
+            configuration.write(config_file)
+    return configuration
 
-        print(f"title: {title}")
-        print(f"TMDB ID: {tmdb_id}")
-        print(f"Last watched season: {last_watched_season}")
-        ok = False if input("Does this look ok? (Y/n) ") == "n" else True
 
-        if ok:
-            sql.add_series(
-                connection,
-                Series(
-                    tmdb_id=tmdb_id,
-                    title=title,
-                    last_watched_season=last_watched_season,
-                ),
-            )
-        else:
-            print("Data was not saved")
+def read_tmdb_token(configuration: ConfigParser) -> str | None:
+    """Return the TMDB token from the configuration, or None if it isn't set."""
+    return configuration.get(TOKENS_SECTION, TMDB_TOKEN_OPTION, fallback=None)
 
-        print("")
-        add_more = True if input("Add more shows? (y/N) ") == "y" else False
+
+def store_tmdb_token(configuration: ConfigParser, tmdb_token: str) -> None:
+    """Set the TMDB token and rewrite the configuration file with it.
+
+    Comments that the user has written in the file are lost.
+    """
+    configuration.set(TOKENS_SECTION, TMDB_TOKEN_OPTION, tmdb_token)
+    with open(Constants.CONFIG_PATH, mode="w") as config_file:
+        configuration.write(config_file)

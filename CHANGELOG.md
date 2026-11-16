@@ -14,6 +14,8 @@
 - The database is converted to a new layout the first time this version runs.
   Your TV shows are kept, and a backup is made first as usual, but earlier
   versions of Seasonwatch can't use the converted database.
+- Asking for help or setting the token no longer makes a backup of the
+  database.
 
 ### Fixed
 
