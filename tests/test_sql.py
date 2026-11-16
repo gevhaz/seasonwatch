@@ -2,7 +2,19 @@ import apsw
 import pytest
 
 from seasonwatch.exceptions import SeasonwatchException
-from seasonwatch.sql import SCHEMA_MIGRATIONS, migrate_schema, read_schema_version
+from seasonwatch.series import Series
+from seasonwatch.sql import (
+    SCHEMA_MIGRATIONS,
+    add_series,
+    migrate_schema,
+    read_all_series,
+    read_schema_version,
+    remove_series,
+    step_up_series,
+)
+
+THE_EXPANSE = Series(tmdb_id=63639, title="The Expanse", last_watched_season=3)
+GAME_OF_THRONES = Series(tmdb_id=1399, title="Game of Thrones", last_watched_season=8)
 
 
 def create_empty_database() -> apsw.Connection:
@@ -124,3 +136,52 @@ def test_migrating_database_from_before_versioning_keeps_its_series() -> None:
     all_rows = list(connection.cursor().execute("SELECT * FROM series"))
     assert all_rows == [(63639, "The Expanse", 3)]
     assert read_schema_version(connection) == len(SCHEMA_MIGRATIONS)
+
+
+def create_up_to_date_database() -> apsw.Connection:
+    connection = create_empty_database()
+    migrate_schema(connection)
+    return connection
+
+
+def test_added_series_are_read_in_the_order_they_were_added() -> None:
+    connection = create_up_to_date_database()
+
+    add_series(connection, THE_EXPANSE)
+    add_series(connection, GAME_OF_THRONES)
+
+    assert read_all_series(connection) == [THE_EXPANSE, GAME_OF_THRONES]
+
+
+def test_title_with_apostrophe_is_stored_unchanged() -> None:
+    connection = create_up_to_date_database()
+    greys_anatomy = Series(tmdb_id=1416, title="Grey's Anatomy", last_watched_season=1)
+
+    add_series(connection, greys_anatomy)
+
+    assert read_all_series(connection) == [greys_anatomy]
+
+
+def test_step_up_series_increases_only_that_series() -> None:
+    connection = create_up_to_date_database()
+    add_series(connection, THE_EXPANSE)
+    add_series(connection, GAME_OF_THRONES)
+
+    step_up_series(connection, THE_EXPANSE.tmdb_id)
+
+    stepped_up_expanse = Series(
+        tmdb_id=63639,
+        title="The Expanse",
+        last_watched_season=4,
+    )
+    assert read_all_series(connection) == [stepped_up_expanse, GAME_OF_THRONES]
+
+
+def test_remove_series_removes_only_that_series() -> None:
+    connection = create_up_to_date_database()
+    add_series(connection, THE_EXPANSE)
+    add_series(connection, GAME_OF_THRONES)
+
+    remove_series(connection, THE_EXPANSE.tmdb_id)
+
+    assert read_all_series(connection) == [GAME_OF_THRONES]

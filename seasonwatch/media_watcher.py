@@ -2,6 +2,7 @@
 
 from datetime import date
 
+import apsw
 from requests import Session
 
 from seasonwatch import sql
@@ -15,8 +16,12 @@ from seasonwatch.season_status import (
 from seasonwatch.tmdb import fetch_season
 
 
-def check_for_new_seasons(session: Session, today: date) -> list[SeasonCheck]:
-    """Return the status of the next season of every stored series.
+def check_for_new_seasons(
+    connection: apsw.Connection,
+    session: Session,
+    today: date,
+) -> list[SeasonCheck]:
+    """Return the status of the next season of every series in the database.
 
     The next season is the one after the last season that the user has
     watched, and ``today`` is the day that its air date is compared to.
@@ -26,7 +31,7 @@ def check_for_new_seasons(session: Session, today: date) -> list[SeasonCheck]:
     checked.
     """
     season_checks: list[SeasonCheck] = []
-    for series in sql.read_all_series():
+    for series in sql.read_all_series(connection):
         next_season_number = series.last_watched_season + 1
         status: SeasonStatus
         try:

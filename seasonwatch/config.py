@@ -1,13 +1,15 @@
 """Interactive commands for changing which shows are checked."""
 
+import apsw
+
 from seasonwatch import sql
 from seasonwatch.exceptions import SeasonwatchException
 from seasonwatch.series import Series
 
 
-def step_up_series() -> None:
+def step_up_series(connection: apsw.Connection) -> None:
     """Increase 'current season' of a TV show by 1."""
-    all_series = sql.read_all_series()
+    all_series = sql.read_all_series(connection)
     for index, series in enumerate(all_series):
         print(f"[{index}] {series.title}")
     selection: list[str] = input(
@@ -18,13 +20,13 @@ def step_up_series() -> None:
     for index, series in enumerate(all_series):
         if str(index) not in selection:
             continue
-        sql.step_up_series(series.tmdb_id)
+        sql.step_up_series(connection, series.tmdb_id)
         print(f"Successfully stepped up '{series.title}'.")
 
 
-def remove_series() -> None:
+def remove_series(connection: apsw.Connection) -> None:
     """Remove a TV show."""
-    all_series = sql.read_all_series()
+    all_series = sql.read_all_series(connection)
     for index, series in enumerate(all_series):
         print(f"[{index}] {series.title}")
     selection: list[str] = input(
@@ -34,11 +36,11 @@ def remove_series() -> None:
     for index, series in enumerate(all_series):
         if str(index) not in selection:
             continue
-        sql.remove_series(series.tmdb_id)
+        sql.remove_series(connection, series.tmdb_id)
         print(f"Successfully deleted '{series.title}'.")
 
 
-def add_series() -> None:
+def add_series(connection: apsw.Connection) -> None:
     """Interactively add one or more TV-shows to the database.
 
     Asks the user for the title, the TMDB ID and the last watched
@@ -72,11 +74,12 @@ def add_series() -> None:
 
         if ok:
             sql.add_series(
+                connection,
                 Series(
                     tmdb_id=tmdb_id,
                     title=title,
                     last_watched_season=last_watched_season,
-                )
+                ),
             )
         else:
             print("Data was not saved")

@@ -21,9 +21,9 @@ init(autoreset=True)
 
 
 def main() -> int:
-    sql.backup_database()
+    sql.backup_database(sql.DATABASE_PATH)
     try:
-        sql.ensure_table()
+        connection = sql.open_database(sql.DATABASE_PATH)
     except SeasonwatchException as error:
         print(error, file=sys.stderr)
         return 1
@@ -85,13 +85,13 @@ def main() -> int:
 
     if args.subparser_name == "tv":
         if args.add:
-            config.add_series()
+            config.add_series(connection)
         if args.remove:
-            config.remove_series()
+            config.remove_series(connection)
         if args.step_up:
-            config.step_up_series()
+            config.step_up_series(connection)
         if args.list_shows:
-            print(format_series_table(sql.read_all_series()))
+            print(format_series_table(sql.read_all_series(connection)))
         return 0
 
     tmdb_session = Session()
@@ -103,7 +103,11 @@ def main() -> int:
     )
 
     try:
-        season_checks = check_for_new_seasons(tmdb_session, today=date.today())
+        season_checks = check_for_new_seasons(
+            connection,
+            tmdb_session,
+            today=date.today(),
+        )
     except SeasonwatchException as e:
         logging.error(
             f"Seasonwatch encountered an error when checking for new seasons: {e}"
