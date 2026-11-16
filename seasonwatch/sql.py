@@ -1,7 +1,7 @@
 import os
 import shutil
 from pathlib import Path
-from typing import Any, Final, TypedDict
+from typing import Any, Callable, Final, TypedDict
 
 import apsw
 from prettytable.prettytable import from_db_cursor
@@ -35,84 +35,122 @@ class DBRecord(TypedDict):
     id_source: Source
 
 
+def add_id_source_column_if_missing(connection: apsw.Connection) -> None:
+    """Add the ``id_source`` column to a series table from before 0.3.0.
+
+    All series that are stored at that point get the ID source 'IMDb'.
+    """
+    cursor = connection.cursor()
+    table_info = cursor.execute(f"""PRAGMA table_info({SERIES_TABLE})""")
+    column_names = [row[1] for row in table_info]
+    if "id_source" in column_names:
+        return
+    cursor.execute(
+        f"""
+        ALTER TABLE {SERIES_TABLE}
+        ADD COLUMN id_source TEXT
+        DEFAULT '{Source.TMDB.value}';
+        """
+    )
+    cursor.execute(
+        f"""
+        UPDATE {SERIES_TABLE}
+        SET id_source = '{Source.IMDB.value}';
+        """
+    )
+    print(
+        "Column 'id_source' was missing from TV Series table. "
+        "All existing series have been given the ID source 'IMDb'"
+    )
+
+
+def create_initial_tables(connection: apsw.Connection) -> None:
+    """Create the tables that Seasonwatch had before its schema was versioned.
+
+    Tables that already exist are kept, since databases from before the
+    versioning have them but still count as version 0.
+    """
+    cursor = connection.cursor()
+    cursor.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS {MOVIES_TABLE} (
+            id TEXT NOT NULL PRIMARY KEY UNIQUE,
+            title TEXT NOT NULL UNIQUE,
+            number_of_checks INGEGER DEFAULT 0,
+            last_notified_date TEXT DEFAULT '1970-01-01 00:00:00',
+            last_change_date TEXT DEFAULT '1970-01-01 00:00:00'
+        );
+        """
+    )
+    cursor.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS {SERIES_TABLE} (
+            id TEXT NOT NULL PRIMARY KEY UNIQUE,
+            title TEXT NOT NULL UNIQUE,
+            last_watched_season INTEGER DEFAULT 0,
+            number_of_checks INGEGER DEFAULT 0,
+            last_notified_date TEXT DEFAULT '1970-01-01 00:00:00',
+            last_change_date TEXT DEFAULT '1970-01-01 00:00:00',
+            id_source TEXT DEFAULT '{Source.TMDB.value}'
+        );
+        """
+    )
+    add_id_source_column_if_missing(connection)
+
+
+# The migration at index N takes the database from schema version N to
+# N + 1. Released migrations must not be changed, only added to.
+SCHEMA_MIGRATIONS: Final[list[Callable[[apsw.Connection], None]]] = [
+    create_initial_tables,
+]
+
+
+def read_schema_version(connection: apsw.Connection) -> int:
+    """Return how many of ``SCHEMA_MIGRATIONS`` the database has been through."""
+    for (schema_version,) in connection.cursor().execute("PRAGMA user_version"):
+        return int(schema_version)
+    raise SeasonwatchException("Couldn't read the schema version of the database.")
+
+
+def migrate_schema(connection: apsw.Connection) -> None:
+    """Bring the database to the schema that this version of Seasonwatch uses.
+
+    Works on a new, empty database as well as on one from any earlier
+    version, and does nothing if the database is already up to date.
+    Each migration either takes effect completely or not at all.
+
+    :raises SeasonwatchException: If the database was written by a newer
+        version of Seasonwatch.
+    """
+    schema_version = read_schema_version(connection)
+    if schema_version > len(SCHEMA_MIGRATIONS):
+        raise SeasonwatchException(
+            "The database was created by a newer version of Seasonwatch. "
+            "Please upgrade Seasonwatch to use it."
+        )
+
+    remaining_migrations = SCHEMA_MIGRATIONS[schema_version:]
+    for migration in remaining_migrations:
+        # Using the connection as a context manager makes a transaction
+        # that is rolled back if the migration raises.
+        with connection:
+            migration(connection)
+            schema_version += 1
+            connection.cursor().execute(f"PRAGMA user_version = {schema_version}")
+
+
 class Sql:
     @staticmethod
-    def ensure_id_source_exist(connection: apsw.Connection) -> None:
-        """Add id_source column if missing.
-
-        Ensure that 'id_source' column exists in the TV Series table.
-        """
-        cursor = connection.cursor()
-        table_info = cursor.execute(f"""PRAGMA table_info({SERIES_TABLE})""")
-        column_names = [row[1] for row in table_info]
-        if "id_source" not in column_names:
-            cursor.execute("BEGIN TRANSACTION")
-            cursor.execute(
-                f"""
-                ALTER TABLE {SERIES_TABLE}
-                ADD COLUMN id_source TEXT
-                DEFAULT '{Source.TMDB}';
-                """
-            )
-            cursor.execute(
-                f"""
-                UPDATE {SERIES_TABLE}
-                SET id_source = '{Source.IMDB.value}';
-                """
-            )
-            cursor.execute("COMMIT TRANSACTION")
-            print(
-                "Column 'id_source' was missing from TV Series table. "
-                "All existing series have been given the ID source 'IMDb'"
-            )
-
-    @staticmethod
     def ensure_table() -> None:
-        """Ensure that all expected tables exist in database.
+        """Create or update the tables in the Seasonwatch database.
 
-        Ensure that all tables supported by Seasonwatch is present in
-        the Seasonwatch database.
+        Also creates the directory for the database if it is missing.
         """
         if not DATA_DIRECTORY.exists():
             DATA_DIRECTORY.mkdir(parents=True, exist_ok=True)
 
         connection = apsw.Connection(DATABASE_PATH)
-        cursor = connection.cursor()
-
-        cursor.execute("BEGIN TRANSACTION")
-
-        cursor.execute(
-            f"""
-            CREATE TABLE IF NOT EXISTS {MOVIES_TABLE} (
-                id TEXT NOT NULL PRIMARY KEY UNIQUE,
-                title TEXT NOT NULL UNIQUE,
-                number_of_checks INGEGER DEFAULT 0,
-                last_notified_date TEXT DEFAULT '1970-01-01 00:00:00',
-                last_change_date TEXT DEFAULT '1970-01-01 00:00:00'
-            );
-            """
-        )
-
-        cursor.execute(
-            f"""
-            CREATE TABLE IF NOT EXISTS {SERIES_TABLE} (
-                id TEXT NOT NULL PRIMARY KEY UNIQUE,
-                title TEXT NOT NULL UNIQUE,
-                last_watched_season INTEGER DEFAULT 0,
-                number_of_checks INGEGER DEFAULT 0,
-                last_notified_date TEXT DEFAULT '1970-01-01 00:00:00',
-                last_change_date TEXT DEFAULT '1970-01-01 00:00:00',
-                id_source TEXT DEFAULT '{Source.TMDB.value}'
-            );
-            """
-        )
-
-        cursor.execute("COMMIT TRANSACTION")
-        connection.close()
-
-        # Can the previous connection be reused instead?
-        connection = apsw.Connection(DATABASE_PATH)
-        Sql.ensure_id_source_exist(connection)
+        migrate_schema(connection)
         connection.close()
 
     @staticmethod
