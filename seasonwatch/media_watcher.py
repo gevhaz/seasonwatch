@@ -1,12 +1,12 @@
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 
-from dateutil.parser import parse
 from requests import HTTPError, RequestException, Session
 
 from seasonwatch.constants import Constants, Source
 from seasonwatch.exceptions import SeasonwatchException
 from seasonwatch.sql import Sql
+from seasonwatch.tmdb import fetch_season
 from seasonwatch.utils import Utils
 
 
@@ -104,15 +104,14 @@ class MediaWatcher:
                 )
                 print(f"Successfully migrated series '{name}' from IMDb to TMDB")
 
-            next_season = Utils.get_next_season(id, last_watched_season, session)
+            next_season = fetch_season(session, id, next_season_no)
 
-            if not next_season:
+            if next_season is None:
                 message = f"No season {next_season_no} found for {name}"
                 self.series["nothing"][name] = message
                 continue
 
-            next_air_date_raw = next_season.get("air_date")
-            if not next_air_date_raw:
+            if next_season.air_date is None:
                 message = (
                     f"Season {next_season_no} of {name} coming up, the release "
                     "date is unknown"
@@ -120,11 +119,7 @@ class MediaWatcher:
                 self.series["nothing"][name] = message
                 continue
 
-            if not isinstance(next_air_date_raw, str):
-                raise SeasonwatchException(
-                    f"Malformed air date returned from TMDB: {next_air_date_raw}"
-                )
-            next_air_date = parse(next_air_date_raw)
+            next_air_date = datetime.combine(next_season.air_date, time.min)
 
             # The new season is out
             if next_air_date < datetime.now():
