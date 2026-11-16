@@ -8,5 +8,7 @@ XDG
 changelog
 cron
 deterministically
+docstring
+docstrings
 hardcoded
 watchlist
