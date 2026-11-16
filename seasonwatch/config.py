@@ -1,4 +1,3 @@
-from seasonwatch.constants import Source
 from seasonwatch.exceptions import SeasonwatchException
 from seasonwatch.sql import Sql
 
@@ -91,7 +90,6 @@ class Configure:
                     0,
                     "1970-01-01 00:00:00",
                     "1970-01-01 00:00:00",
-                    Source.TMDB,
                 )
             else:
                 print("Data was not saved")

@@ -45,3 +45,39 @@ def test_migrating_database_from_newer_version_is_refused() -> None:
 
     with pytest.raises(SeasonwatchException):
         migrate_schema(connection)
+
+
+def create_database_at_schema_version_1() -> apsw.Connection:
+    connection = create_empty_database()
+    first_migration = SCHEMA_MIGRATIONS[0]
+    first_migration(connection)
+    connection.cursor().execute("PRAGMA user_version = 1")
+    return connection
+
+
+def test_migrating_drops_id_source_when_all_ids_are_from_tmdb() -> None:
+    connection = create_database_at_schema_version_1()
+    connection.cursor().execute(
+        "INSERT INTO series (id, title, id_source) "
+        "VALUES ('63639', 'The Expanse', 'TMDB')"
+    )
+
+    migrate_schema(connection)
+
+    assert "id_source" not in read_column_names(connection, "series")
+    all_titles = list(connection.cursor().execute("SELECT title FROM series"))
+    assert all_titles == [("The Expanse",)]
+
+
+def test_migrating_is_refused_while_a_series_has_an_imdb_id() -> None:
+    connection = create_database_at_schema_version_1()
+    connection.cursor().execute(
+        "INSERT INTO series (id, title, id_source) "
+        "VALUES ('3230854', 'The Expanse', 'IMDb')"
+    )
+
+    with pytest.raises(SeasonwatchException, match="The Expanse"):
+        migrate_schema(connection)
+
+    assert read_schema_version(connection) == 1
+    assert "id_source" in read_column_names(connection, "series")

@@ -1,5 +1,4 @@
 import os
-from enum import Enum
 from pathlib import Path
 from typing import Final
 
@@ -16,10 +15,3 @@ class Constants:
 
     API_VERSION: Final[str] = "3"
     API_BASE_URL: Final[str] = f"https://api.themoviedb.org/{API_VERSION}"
-
-
-class Source(Enum):
-    """Enum with accepted TV Series information sources."""
-
-    IMDB = "IMDb"
-    TMDB = "TMDB"

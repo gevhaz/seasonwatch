@@ -6,7 +6,6 @@ from typing import Any, Callable, Final, TypedDict
 import apsw
 from prettytable.prettytable import from_db_cursor
 
-from seasonwatch.constants import Source
 from seasonwatch.exceptions import SeasonwatchException
 from seasonwatch.utils import Utils
 
@@ -32,7 +31,6 @@ class DBRecord(TypedDict):
     last_check: str
     last_notified: str
     last_changed: str
-    id_source: Source
 
 
 def add_id_source_column_if_missing(connection: apsw.Connection) -> None:
@@ -49,13 +47,13 @@ def add_id_source_column_if_missing(connection: apsw.Connection) -> None:
         f"""
         ALTER TABLE {SERIES_TABLE}
         ADD COLUMN id_source TEXT
-        DEFAULT '{Source.TMDB.value}';
+        DEFAULT 'TMDB';
         """
     )
     cursor.execute(
         f"""
         UPDATE {SERIES_TABLE}
-        SET id_source = '{Source.IMDB.value}';
+        SET id_source = 'IMDb';
         """
     )
     print(
@@ -91,17 +89,40 @@ def create_initial_tables(connection: apsw.Connection) -> None:
             number_of_checks INGEGER DEFAULT 0,
             last_notified_date TEXT DEFAULT '1970-01-01 00:00:00',
             last_change_date TEXT DEFAULT '1970-01-01 00:00:00',
-            id_source TEXT DEFAULT '{Source.TMDB.value}'
+            id_source TEXT DEFAULT 'TMDB'
         );
         """
     )
     add_id_source_column_if_missing(connection)
 
 
+def remove_id_source_column(connection: apsw.Connection) -> None:
+    """Drop the column that says if the ID of a series is from IMDb or TMDB.
+
+    :raises SeasonwatchException: If a series still has an IMDb ID, since
+        only Seasonwatch 0.3 can convert those to TMDB IDs.
+    """
+    cursor = connection.cursor()
+    titles_with_imdb_id = []
+    for (title,) in cursor.execute(
+        f"SELECT title FROM {SERIES_TABLE} WHERE id_source = 'IMDb'"
+    ):
+        titles_with_imdb_id.append(title)
+    if titles_with_imdb_id:
+        raise SeasonwatchException(
+            "These TV shows still have an IMDb ID, which this version of "
+            f"Seasonwatch can't use: {', '.join(titles_with_imdb_id)}. Install "
+            "Seasonwatch 0.3.2 and run it once to convert them to TMDB IDs, "
+            "then upgrade again. None of your TV shows have been changed."
+        )
+    cursor.execute(f"ALTER TABLE {SERIES_TABLE} DROP COLUMN id_source")
+
+
 # The migration at index N takes the database from schema version N to
 # N + 1. Released migrations must not be changed, only added to.
 SCHEMA_MIGRATIONS: Final[list[Callable[[apsw.Connection], None]]] = [
     create_initial_tables,
+    remove_id_source_column,
 ]
 
 
@@ -206,15 +227,11 @@ class Sql:
         checks: int,
         last_change: str,
         last_notify: str,
-        id_source: Source,
-        full_replace: bool = False,
     ) -> None:
         """Add or update a record in the series table.
 
         Adds or updates a series in the series table. Will add if the ID
-        doesn't exist. All columns have to be provided. If
-        "full_replace" is True, any series with the title ``title`` will
-        be deleted, essentially readding the record with the new values.
+        doesn't exist. All columns have to be provided.
 
         :param id: The ID of the series.
         :param title: The user-provided name of the series.
@@ -227,25 +244,13 @@ class Sql:
             database.
         :param last_notify: Last time the user was notified about the
             status of new seasons for this series.
-        :param id_source: Where the ID is applicable, eg TMDB.
-        :param full_replace: Delete any record with matching ``title``
-            value before adding the new data.
         """
         connection = apsw.Connection(DATABASE_PATH)
         cursor = connection.cursor()
 
-        source = id_source.value
-
         checks = checks + 1
 
         cursor.execute("BEGIN TRANSACTION")
-        if full_replace:
-            cursor.execute(
-                f"""
-                DELETE FROM {SERIES_TABLE}
-                WHERE title = '{title}';
-                """
-            )
         cursor.execute(
             f"""
             INSERT OR REPLACE INTO {SERIES_TABLE} (
@@ -254,8 +259,7 @@ class Sql:
                 last_watched_season,
                 number_of_checks,
                 last_notified_date,
-                last_change_date,
-                id_source
+                last_change_date
             )
             VALUES(
                 {id},
@@ -263,8 +267,7 @@ class Sql:
                 {last},
                 {checks},
                 '{last_notify}',
-                '{last_change}',
-                '{source}'
+                '{last_change}'
             );
             """
         )
@@ -298,7 +301,7 @@ class Sql:
         connection = apsw.Connection(DATABASE_PATH)
         cursor = connection.cursor()
         values: dict[str, str] = {}
-        for _, title, last, check, notified, change, id_source in cursor.execute(
+        for _, title, last, check, notified, change in cursor.execute(
             f"""
             SELECT
                 id,
@@ -306,8 +309,7 @@ class Sql:
                 last_watched_season,
                 number_of_checks,
                 last_notified_date,
-                last_change_date,
-                id_source
+                last_change_date
             FROM
                 {SERIES_TABLE}
             WHERE
@@ -322,7 +324,6 @@ class Sql:
                 "last_check": check,
                 "last_notified": notified,
                 "last_changed": change,
-                "id_source": id_source,
             }
         connection.close()
         return values
@@ -336,9 +337,8 @@ class Sql:
         """
         connection = apsw.Connection(DATABASE_PATH)
         cursor = connection.cursor()
-        # Should be TypedDict instead of allowing any value to be Source
         values: list[DBRecord] = []
-        for id, title, last, check, notified, change, id_source in cursor.execute(
+        for id, title, last, check, notified, change in cursor.execute(
             f"""
             SELECT
                 id,
@@ -346,8 +346,7 @@ class Sql:
                 last_watched_season,
                 number_of_checks,
                 last_notified_date,
-                last_change_date,
-                id_source
+                last_change_date
             FROM
                 {SERIES_TABLE}
             """
@@ -361,9 +360,6 @@ class Sql:
                     "last_check": check,
                     "last_notified": notified,
                     "last_changed": change,
-                    "id_source": (
-                        Source.IMDB if id_source == Source.IMDB.value else Source.TMDB
-                    ),
                 }
             )
         connection.close()
@@ -388,11 +384,7 @@ class Sql:
             SELECT
                 title,
                 last_watched_season,
-                CASE
-                    WHEN id_source = '{Source.IMDB.value}'
-                    THEN 'https://www.imdb.com/title/tt' || id
-                    ELSE 'https://www.themoviedb.org/tv/' || id
-                END
+                'https://www.themoviedb.org/tv/' || id
             FROM
                 {SERIES_TABLE};
             """

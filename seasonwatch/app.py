@@ -23,7 +23,11 @@ init(autoreset=True)
 
 def main() -> int:
     Sql.backup_database()
-    Sql.ensure_table()
+    try:
+        Sql.ensure_table()
+    except SeasonwatchException as error:
+        print(error, file=sys.stderr)
+        return 1
 
     if not Constants.CONFIG_DIRECTORY.exists():
         Constants.CONFIG_DIRECTORY.mkdir(parents=True, exist_ok=True)

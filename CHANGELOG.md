@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Breaking
+
+- Removed the interactive conversion of TV shows from IMDb IDs to TMDB IDs. If
+  your database still has shows with IMDb IDs, Seasonwatch tells you so and
+  exits without changing anything. Run version 0.3.2 once to convert them
+  before upgrading.
+
 ### Fixed
 
 - A TV show that can't be looked up on TMDB, e.g. because the wrong ID was
