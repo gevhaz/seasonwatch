@@ -1,23 +1,20 @@
 import logging
 import sys
 from configparser import ConfigParser
+from datetime import date
 
-import gi
 import requests
+from colorama import init
 from prettytable.prettytable import SINGLE_BORDER
 from requests import RequestException, Session
 from requests.exceptions import HTTPError
-
-gi.require_version("Notify", "0.7")
-
-from colorama import Fore, init
-from gi.repository import Notify
 
 from seasonwatch.cli import Cli
 from seasonwatch.config import Configure
 from seasonwatch.constants import Constants
 from seasonwatch.exceptions import SeasonwatchException
-from seasonwatch.media_watcher import MediaWatcher
+from seasonwatch.media_watcher import check_for_new_seasons
+from seasonwatch.report import report_season_checks
 from seasonwatch.sql import Sql
 
 init(autoreset=True)
@@ -96,9 +93,6 @@ def main() -> int:
             print(table)
         return 0
 
-    Notify.init("Seasonwatch")
-    watcher = MediaWatcher()
-
     tmdb_session = Session()
     tmdb_session.headers.update(
         {
@@ -108,29 +102,14 @@ def main() -> int:
     )
 
     try:
-        watcher.check_for_new_seasons(session=tmdb_session)
+        season_checks = check_for_new_seasons(tmdb_session, today=date.today())
     except SeasonwatchException as e:
         logging.error(
             f"Seasonwatch encountered an error when checking for new seasons: {e}"
         )
         return 1
 
-    for title, message in watcher.series["new"].items():
-        print(Fore.BLUE + message)
-        notification = Notify.Notification.new(title, message)
-        notification.set_timeout(10000)
-        notification.show()
-
-    for title, message in watcher.series["soon"].items():
-        print(Fore.GREEN + message)
-        notification = Notify.Notification.new(title, message)
-        notification.show()
-
-    for title, message in watcher.series["later"].items():
-        print(message)
-
-    for title, message in watcher.series["nothing"].items():
-        print(message)
+    report_season_checks(season_checks)
 
     return 0
 
