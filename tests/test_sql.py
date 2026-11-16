@@ -29,7 +29,8 @@ def test_migrating_twice_changes_nothing() -> None:
     connection = create_empty_database()
     migrate_schema(connection)
     connection.cursor().execute(
-        "INSERT INTO series (id, title) VALUES ('63639', 'The Expanse')"
+        "INSERT INTO series (tmdb_id, title, last_watched_season) "
+        "VALUES (63639, 'The Expanse', 3)"
     )
 
     migrate_schema(connection)
@@ -47,22 +48,23 @@ def test_migrating_database_from_newer_version_is_refused() -> None:
         migrate_schema(connection)
 
 
-def create_database_at_schema_version_1() -> apsw.Connection:
+def create_database_at_schema_version(schema_version: int) -> apsw.Connection:
     connection = create_empty_database()
-    first_migration = SCHEMA_MIGRATIONS[0]
-    first_migration(connection)
-    connection.cursor().execute("PRAGMA user_version = 1")
+    for migration in SCHEMA_MIGRATIONS[:schema_version]:
+        migration(connection)
+    connection.cursor().execute(f"PRAGMA user_version = {schema_version}")
     return connection
 
 
 def test_migrating_drops_id_source_when_all_ids_are_from_tmdb() -> None:
-    connection = create_database_at_schema_version_1()
+    connection = create_database_at_schema_version(1)
     connection.cursor().execute(
         "INSERT INTO series (id, title, id_source) "
         "VALUES ('63639', 'The Expanse', 'TMDB')"
     )
 
-    migrate_schema(connection)
+    remove_id_source_column = SCHEMA_MIGRATIONS[1]
+    remove_id_source_column(connection)
 
     assert "id_source" not in read_column_names(connection, "series")
     all_titles = list(connection.cursor().execute("SELECT title FROM series"))
@@ -70,7 +72,7 @@ def test_migrating_drops_id_source_when_all_ids_are_from_tmdb() -> None:
 
 
 def test_migrating_is_refused_while_a_series_has_an_imdb_id() -> None:
-    connection = create_database_at_schema_version_1()
+    connection = create_database_at_schema_version(1)
     connection.cursor().execute(
         "INSERT INTO series (id, title, id_source) "
         "VALUES ('3230854', 'The Expanse', 'IMDb')"
@@ -81,3 +83,44 @@ def test_migrating_is_refused_while_a_series_has_an_imdb_id() -> None:
 
     assert read_schema_version(connection) == 1
     assert "id_source" in read_column_names(connection, "series")
+
+
+def test_migrating_keeps_series_in_order_with_numeric_ids() -> None:
+    connection = create_database_at_schema_version(2)
+    connection.cursor().execute(
+        "INSERT INTO series (id, title, last_watched_season, number_of_checks) "
+        "VALUES ('63639', 'The Expanse', 3, 7), ('1399', 'Game of Thrones', 8, 2)"
+    )
+
+    migrate_schema(connection)
+
+    all_rows = list(connection.cursor().execute("SELECT * FROM series ORDER BY rowid"))
+    assert all_rows == [(63639, "The Expanse", 3), (1399, "Game of Thrones", 8)]
+
+
+def test_migrating_is_refused_while_a_series_has_a_malformed_id() -> None:
+    connection = create_database_at_schema_version(2)
+    connection.cursor().execute(
+        "INSERT INTO series (id, title) VALUES ('1399-game-of-thrones', 'GoT')"
+    )
+
+    with pytest.raises(SeasonwatchException, match="GoT"):
+        migrate_schema(connection)
+
+    assert read_schema_version(connection) == 2
+    assert "id" in read_column_names(connection, "series")
+
+
+def test_migrating_database_from_before_versioning_keeps_its_series() -> None:
+    connection = create_database_at_schema_version(1)
+    connection.cursor().execute("PRAGMA user_version = 0")
+    connection.cursor().execute(
+        "INSERT INTO series (id, title, last_watched_season, id_source) "
+        "VALUES ('63639', 'The Expanse', 3, 'TMDB')"
+    )
+
+    migrate_schema(connection)
+
+    all_rows = list(connection.cursor().execute("SELECT * FROM series"))
+    assert all_rows == [(63639, "The Expanse", 3)]
+    assert read_schema_version(connection) == len(SCHEMA_MIGRATIONS)

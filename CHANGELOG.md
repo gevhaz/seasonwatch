@@ -9,6 +9,12 @@
   exits without changing anything. Run version 0.3.2 once to convert them
   before upgrading.
 
+### Changed
+
+- The database is converted to a new layout the first time this version runs.
+  Your TV shows are kept, and a backup is made first as usual, but earlier
+  versions of Seasonwatch can't use the converted database.
+
 ### Fixed
 
 - Adding a TV show with an apostrophe in its title, e.g. "Grey's Anatomy", no

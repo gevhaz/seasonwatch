@@ -5,7 +5,6 @@ from datetime import date
 
 import requests
 from colorama import init
-from prettytable.prettytable import SINGLE_BORDER
 from requests import RequestException, Session
 from requests.exceptions import HTTPError
 
@@ -14,6 +13,7 @@ from seasonwatch.config import Configure
 from seasonwatch.constants import Constants
 from seasonwatch.exceptions import SeasonwatchException
 from seasonwatch.media_watcher import check_for_new_seasons
+from seasonwatch.presentation import format_series_table
 from seasonwatch.report import report_season_checks
 from seasonwatch.season_status import CheckFailed
 from seasonwatch.sql import Sql
@@ -92,10 +92,7 @@ def main() -> int:
         if args.step_up:
             Configure.step_up_series()
         if args.list_shows:
-            table = Sql.get_printable_series_table()
-            table.set_style(SINGLE_BORDER)
-            table.align = "l"
-            print(table)
+            print(format_series_table(Sql.read_all_series()))
         return 0
 
     tmdb_session = Session()

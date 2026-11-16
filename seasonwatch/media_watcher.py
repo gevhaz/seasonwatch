@@ -27,17 +27,17 @@ def check_for_new_seasons(session: Session, today: date) -> list[SeasonCheck]:
     """
     season_checks: list[SeasonCheck] = []
     for series in Sql.read_all_series():
-        next_season_number = int(series["last_season"]) + 1
+        next_season_number = series.last_watched_season + 1
         status: SeasonStatus
         try:
-            next_season = fetch_season(session, series["id"], next_season_number)
+            next_season = fetch_season(session, series.tmdb_id, next_season_number)
         except SeasonwatchException as error:
             status = CheckFailed(reason=str(error))
         else:
             status = classify_season(next_season, today)
         season_checks.append(
             SeasonCheck(
-                series_title=series["title"],
+                series_title=series.title,
                 season_number=next_season_number,
                 status=status,
             )

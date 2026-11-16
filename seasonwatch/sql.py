@@ -1,12 +1,12 @@
 import os
 import shutil
 from pathlib import Path
-from typing import Any, Callable, Final, TypedDict
+from typing import Callable, Final
 
 import apsw
-from prettytable.prettytable import from_db_cursor
 
 from seasonwatch.exceptions import SeasonwatchException
+from seasonwatch.series import Series
 from seasonwatch.utils import Utils
 
 DATA_DIRECTORY: Final[Path] = Path(
@@ -22,15 +22,6 @@ N_BACKUPS: Final[int] = 10
 
 SERIES_TABLE: Final[str] = "series"
 MOVIES_TABLE: Final[str] = "movies"
-
-
-class DBRecord(TypedDict):
-    id: str
-    title: str
-    last_season: str
-    last_check: str
-    last_notified: str
-    last_changed: str
 
 
 def add_id_source_column_if_missing(connection: apsw.Connection) -> None:
@@ -118,11 +109,65 @@ def remove_id_source_column(connection: apsw.Connection) -> None:
     cursor.execute(f"ALTER TABLE {SERIES_TABLE} DROP COLUMN id_source")
 
 
+def rebuild_series_table(connection: apsw.Connection) -> None:
+    """Keep only the used columns of the series table, with numeric IDs.
+
+    The ID, the title and the last watched season of every series are
+    kept, as is the order of the series. The columns that recorded
+    checks and notifications are dropped, and so is the movies table
+    if it is empty. Neither was ever read.
+
+    :raises SeasonwatchException: If the ID of a series isn't a number.
+    """
+    cursor = connection.cursor()
+
+    titles_with_malformed_id = []
+    for (title,) in cursor.execute(
+        f"SELECT title FROM {SERIES_TABLE} WHERE id = '' OR id GLOB '*[^0-9]*'"
+    ):
+        titles_with_malformed_id.append(title)
+    if titles_with_malformed_id:
+        raise SeasonwatchException(
+            "These TV shows have an ID that isn't a number: "
+            f"{', '.join(titles_with_malformed_id)}. Remove them with the "
+            "version of Seasonwatch that you had before and add them again. "
+            "None of your TV shows have been changed."
+        )
+
+    # SQLite can't change the type of a column, so the table is replaced.
+    # The ID isn't the primary key, because that would make it the rowid
+    # that keeps track of the order in which the series were added.
+    cursor.execute(
+        """
+        CREATE TABLE rebuilt_series (
+            tmdb_id INTEGER NOT NULL UNIQUE,
+            title TEXT NOT NULL UNIQUE,
+            last_watched_season INTEGER NOT NULL
+        );
+        """
+    )
+    cursor.execute(
+        f"""
+        INSERT INTO rebuilt_series (tmdb_id, title, last_watched_season)
+        SELECT CAST(id AS INTEGER), title, COALESCE(last_watched_season, 0)
+        FROM {SERIES_TABLE}
+        ORDER BY rowid;
+        """
+    )
+    cursor.execute(f"DROP TABLE {SERIES_TABLE}")
+    cursor.execute(f"ALTER TABLE rebuilt_series RENAME TO {SERIES_TABLE}")
+
+    for (number_of_movies,) in cursor.execute(f"SELECT COUNT(*) FROM {MOVIES_TABLE}"):
+        if number_of_movies == 0:
+            cursor.execute(f"DROP TABLE {MOVIES_TABLE}")
+
+
 # The migration at index N takes the database from schema version N to
 # N + 1. Released migrations must not be changed, only added to.
 SCHEMA_MIGRATIONS: Final[list[Callable[[apsw.Connection], None]]] = [
     create_initial_tables,
     remove_id_source_column,
+    rebuild_series_table,
 ]
 
 
@@ -199,202 +244,67 @@ class Sql:
                 os.remove(DATA_DIRECTORY / file)
 
     @staticmethod
-    def remove_series(id: str) -> None:
-        """Remove the show with the specified ID from the database.
-
-        Remove the show with the specified id from the database so that
-        it will no longer be checked for new seasons or have any traces
-        saved by seasonwatch.
-        """
+    def add_series(series: Series) -> None:
+        """Store a series, replacing any stored series with its ID or title."""
         connection = apsw.Connection(DATABASE_PATH)
-        cursor = connection.cursor()
-
-        cursor.execute("BEGIN TRANSACTION")
-        cursor.execute(
-            f"""
-            DELETE FROM {SERIES_TABLE}
-            WHERE id = ?;
-            """,
-            (id,),
-        )
-        cursor.execute("COMMIT TRANSACTION")
-        connection.close()
-
-    @staticmethod
-    def update_series(
-        id: str,
-        title: str,
-        last: int,
-        checks: int,
-        last_change: str,
-        last_notify: str,
-    ) -> None:
-        """Add or update a record in the series table.
-
-        Adds or updates a series in the series table. Will add if the ID
-        doesn't exist. All columns have to be provided.
-
-        :param id: The ID of the series.
-        :param title: The user-provided name of the series.
-        :param last: The last seen season by the user.
-        :param checks: Number of times this TV show has been checked for
-            new seasons. 1 will be added when calling this function, so
-            please simply send back whatever value was there before for
-            this record.
-        :param last_change: Last time this series was updated in the
-            database.
-        :param last_notify: Last time the user was notified about the
-            status of new seasons for this series.
-        """
-        connection = apsw.Connection(DATABASE_PATH)
-        cursor = connection.cursor()
-
-        checks = checks + 1
-
-        cursor.execute("BEGIN TRANSACTION")
-        cursor.execute(
-            f"""
-            INSERT OR REPLACE INTO {SERIES_TABLE} (
-                id,
-                title,
-                last_watched_season,
-                number_of_checks,
-                last_notified_date,
-                last_change_date
-            )
-            VALUES(?, ?, ?, ?, ?, ?);
-            """,
-            (id, title, last, checks, last_notify, last_change),
-        )
-        cursor.execute("COMMIT TRANSACTION")
-        connection.close()
-
-    @staticmethod
-    def step_up_series(id: str) -> None:
-        """Increase last_watched_season value by one for show with id.
-
-        Step up the last watched season number for the show with the
-        specified id in the database.
-        """
-        connection = apsw.Connection(DATABASE_PATH)
-        cursor = connection.cursor()
-
-        cursor.execute("BEGIN TRANSACTION")
-        cursor.execute(
-            f"""
-            UPDATE {SERIES_TABLE}
-            SET last_watched_season = last_watched_season + 1,
-                last_change_date = ?
-            WHERE id = ?;
-            """,
-            (Utils.sql_today(), id),
-        )
-        cursor.execute("COMMIT TRANSACTION")
-        connection.close()
-
-    @staticmethod
-    def read_series(id: str) -> dict[str, str]:
-        """Return data from the database for the season with id `id`"""
-        connection = apsw.Connection(DATABASE_PATH)
-        cursor = connection.cursor()
-        values: dict[str, str] = {}
-        for _, title, last, check, notified, change in cursor.execute(
-            f"""
-            SELECT
-                id,
-                title,
-                last_watched_season,
-                number_of_checks,
-                last_notified_date,
-                last_change_date
-            FROM
-                {SERIES_TABLE}
-            WHERE
-                id = ?;
-            """,
-            (id,),
-        ):
-            # Safe to assume only one show with a specific ID
-            values = {
-                "id": id,
-                "title": title,
-                "last_season": last,
-                "last_check": check,
-                "last_notified": notified,
-                "last_changed": change,
-            }
-        connection.close()
-        return values
-
-    @staticmethod
-    def read_all_series() -> list[DBRecord]:
-        """Return data from the database for every TV show registered.
-
-        Read all data about TV shows in the database, including data
-        about id, last watched season, number of checks, etc.
-        """
-        connection = apsw.Connection(DATABASE_PATH)
-        cursor = connection.cursor()
-        values: list[DBRecord] = []
-        for id, title, last, check, notified, change in cursor.execute(
-            f"""
-            SELECT
-                id,
-                title,
-                last_watched_season,
-                number_of_checks,
-                last_notified_date,
-                last_change_date
-            FROM
-                {SERIES_TABLE}
-            """
-        ):
-            # Safe to assume only one show with a specific ID
-            values.append(
-                {
-                    "id": id,
-                    "title": title,
-                    "last_season": last,
-                    "last_check": check,
-                    "last_notified": notified,
-                    "last_changed": change,
-                }
+        with connection:
+            connection.cursor().execute(
+                f"""
+                INSERT OR REPLACE INTO {SERIES_TABLE} (
+                    tmdb_id,
+                    title,
+                    last_watched_season
+                )
+                VALUES(?, ?, ?);
+                """,
+                (series.tmdb_id, series.title, series.last_watched_season),
             )
         connection.close()
-        return values
 
     @staticmethod
-    def get_printable_series_table() -> Any:
-        """Get a table with data about all saved TV shows.
-
-        This function returns a PrettyTable object with the most
-        user-relevant data selected from the database. No styling is
-        performed on the table, except for naming the columns.
-
-        :raises SeasonwatchException: If there is an issues with reading
-            the data from the database.
-        :return: The table with information about all saved series.
-        """
+    def remove_series(tmdb_id: int) -> None:
+        """Remove the series with the given ID, if there is one."""
         connection = apsw.Connection(DATABASE_PATH)
-        cursor = connection.cursor()
-        cursor.execute(
-            f"""
-            SELECT
-                title,
-                last_watched_season,
-                'https://www.themoviedb.org/tv/' || id
-            FROM
-                {SERIES_TABLE};
-            """
-        )
-        table = from_db_cursor(cursor)
-        if table is None:
-            raise SeasonwatchException("Couldn't create table from database cursor")
-
-        table.field_names = [
-            "Title",
-            "Last watched season",
-            "Hyperlink",
-        ]
+        with connection:
+            connection.cursor().execute(
+                f"DELETE FROM {SERIES_TABLE} WHERE tmdb_id = ?;",
+                (tmdb_id,),
+            )
         connection.close()
-        return table
+
+    @staticmethod
+    def step_up_series(tmdb_id: int) -> None:
+        """Increase the last watched season of the series with the ID by one."""
+        connection = apsw.Connection(DATABASE_PATH)
+        with connection:
+            connection.cursor().execute(
+                f"""
+                UPDATE {SERIES_TABLE}
+                SET last_watched_season = last_watched_season + 1
+                WHERE tmdb_id = ?;
+                """,
+                (tmdb_id,),
+            )
+        connection.close()
+
+    @staticmethod
+    def read_all_series() -> list[Series]:
+        """Return all stored series, in the order that they were added."""
+        connection = apsw.Connection(DATABASE_PATH)
+        all_series = []
+        for tmdb_id, title, last_watched_season in connection.cursor().execute(
+            f"""
+            SELECT tmdb_id, title, last_watched_season
+            FROM {SERIES_TABLE}
+            ORDER BY rowid;
+            """
+        ):
+            all_series.append(
+                Series(
+                    tmdb_id=tmdb_id,
+                    title=title,
+                    last_watched_season=last_watched_season,
+                )
+            )
+        connection.close()
+        return all_series

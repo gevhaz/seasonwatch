@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Final
 
 from colorama import Fore
+from prettytable.prettytable import SINGLE_BORDER, PrettyTable
 
 from seasonwatch.season_status import (
     CheckFailed,
@@ -19,6 +20,7 @@ from seasonwatch.season_status import (
     Unscheduled,
     assert_never,
 )
+from seasonwatch.series import Series
 
 
 @dataclass(frozen=True)
@@ -88,3 +90,15 @@ def describe_season_check(season_check: SeasonCheck) -> str:
             f"{status.reason}"
         )
     assert_never(status)
+
+
+def format_series_table(all_series: list[Series]) -> str:
+    """Return a table of the given series with a link to each one on TMDB."""
+    table = PrettyTable()
+    table.field_names = ["Title", "Last watched season", "Hyperlink"]
+    for series in all_series:
+        hyperlink = f"https://www.themoviedb.org/tv/{series.tmdb_id}"
+        table.add_row([series.title, series.last_watched_season, hyperlink])
+    table.set_style(SINGLE_BORDER)
+    table.align = "l"
+    return str(table.get_string())
